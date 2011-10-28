@@ -1,12 +1,8 @@
 import transaction
 
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-from sqlalchemy import ForeignKey
-from sqlalchemy import relationship
+from sqlalchemy import Column, Integer, Unicode, DateTime, ForeignKey, relationship
 
-from sqlalchemy.exc import IntegrityError
+#from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 from sqlalchemy.orm import scoped_session
@@ -73,6 +69,20 @@ class User(LangMixIn, Base):
     pwd_hash_repeat = Column(Integer)
     pwd_hash_salt = Column(Unicode(44))
     pwd_hash = Column(Unicode(44))
+    user_type = Column(Integer)
+    view_type = Column(Integer)
+
+
+class ConfigData(Base):
+    id = Column(Integer, primary_key=True)
+    update_url = Column(Unicode(255))
+    machine_name = Column(Unicode(255))
+    public_key = Column(Unicode(1000))
+    last_update = Column(DateTime)
+    last_update_message = Column(Unicode(500))
+    update_log = Column(Unicode) #do we want this to be a separate table?
+    user_type = Column(Integer)
+
 
 def populate():
     session = DBSession()
