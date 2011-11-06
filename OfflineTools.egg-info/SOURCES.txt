@@ -14,8 +14,8 @@ OfflineTools.egg-info/paster_plugins.txt
 OfflineTools.egg-info/requires.txt
 OfflineTools.egg-info/top_level.txt
 offlinetools/__init__.py
+offlinetools/keymgmt.py
 offlinetools/models.py
-offlinetools/views.py
 offlinetools/static/favicon.ico
 offlinetools/static/css/style.css
 offlinetools/static/img/cic-icon.gif
@@ -31,3 +31,8 @@ offlinetools/static/js/libs/json2.min.js
 offlinetools/static/js/libs/modernizr-2.0.6-custom.min.js
 offlinetools/templates/login.mak
 offlinetools/templates/master.mak
+offlinetools/templates/register.mak
+offlinetools/views/__init__.py
+offlinetools/views/base.py
+offlinetools/views/pull.py
+offlinetools/views/register.py

@@ -1,30 +1,33 @@
 <%inherit file="master.mak"/>
-<%block name="title">Login</%block>
+<%block name="title">${_('Login')}</%block>
 <%block name="sitenav"/>
 
 <% renderer = request.model_state.renderer %>
 
 ${renderer.error_notice()}
-<form action='' method='post'>
+<form action="${request.route_path('login', _form=True)}" method="post">
+${renderer.form_passvars()}
+<div class="hidden">
+${renderer.hidden('came_from')}
+</div>
 <table class="form-table">
 <tr>
-	<td class="ui-widget-header">${renderer.label('email', 'Email:')}</td>
+	<td class="ui-widget-header">${renderer.label('LoginName', _('Login:'))}</td>
 	<td class="ui-widget-content">
-		${renderer.errorlist('email')}
-		${renderer.email('email')}
+		${renderer.errorlist('LoginName')}
+		${renderer.text('LoginName')}
 	</td>
 </tr>
 <tr>
-	<td class="ui-widget-header">${renderer.label('password', 'Password:')}</td>
+	<td class="ui-widget-header">${renderer.label('LoginPwd', _('Password:'))}</td>
 	<td class="ui-widget-content">
-		${renderer.errorlist('password')}
-		${renderer.password('password', maxlenght=None)}
+		${renderer.errorlist('LoginPwd')}
+		${renderer.password('LoginPwd', maxlength=None)}
 	</td>
 </tr>
 </table>
 <br>
-<input type="Submit" value="Login">
+<input type="submit" value="${_('Login')}">
 </form>
 
 
-<p>Don't have a password yet? <a href="${request.route_path('register')}">Tell us about yourself</a> or <a href="${request.route_url('search_index', _query=[('bypass_login', 'on')])}">go right to the enhancements</a>.</p>

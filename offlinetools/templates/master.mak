@@ -50,17 +50,13 @@
 <div id="wrap">
 <header class="ui-widget-header" style="padding-left: 1em;">
 <nav class="site-nav"><%block name="sitenav">
-<%block name="newsearch"><a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_url('search_index')}"><span class="ui-icon ui-icon-search ui-button-icon-primary"></span><span class="ui-button-text">New Search</span></a></%block>
-%if request.user:
-<a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_path('suggest')}"><span class="ui-icon ui-icon-comment ui-button-icon-primary"></span><span class="ui-button-text">New Request</span></a> 
-<a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_path('account')}"><span class="ui-icon ui-icon-person ui-button-icon-primary"></span><span class="ui-button-text">Account</span></a>
+<%block name="newsearch"><a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_url('home')}"><span class="ui-icon ui-icon-search ui-button-icon-primary"></span><span class="ui-button-text">New Search</span></a></%block>
 <a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_path('logout')}"><span class="ui-icon ui-icon-power ui-button-icon-primary"></span><span class="ui-button-text">Logout</span></a>
-%else:
-<a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_path('login')}"><span class="ui-icon ui-icon-power ui-button-icon-primary"></span><span class="ui-button-text">Login</span></a>
-%endif
 </%block>
 </nav>
 <h1 style="margin: 0;">CIOC Offline Tools for [INSERT DB]</h1>
+</header>
+<header id="pagetitle">
 <h1 class="clearfix"><%block name="searchnav"/>${self.title()}</h1>
 </header>
 
