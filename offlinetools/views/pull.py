@@ -5,9 +5,8 @@ from operator import itemgetter, attrgetter
 from pyramid.view import view_config
 import requests
 
-from sqlalchemy.orm import subqueryload
 from sqlalchemy import and_
-from sqlalchemy.sql.expression import bindparam, select
+from sqlalchemy.sql.expression import bindparam, select, delete, update, insert
 from sqlalchemy.orm.exc import StaleDataError
 
 
@@ -83,36 +82,88 @@ class Pull(ViewBase):
     def _update(self, data):
         #session = self.request.dbsession
         
+        # insert
+
+        for fn in [self._insert_views, self._insert_field_groups, 
+                   self._insert_fields, self._insert_fieldgroup_fields,
+                   self._insert_users, self._insert_records, self._insert_record_views]:
+            fn(data)
+
         for fn in [self._update_views, self._update_field_groups, 
-                   self._update_fields, self._update_fieldgroup_fields,
-                  self._update_users, self._update_records, self._update_record_views,
+                   self._update_fields, 
+                  self._update_users, 
                   self._update_record_data]:
+            fn(data)
+
+        for fn in [self._delete_views, self._delete_field_groups, 
+                   self._delete_fields, self._delete_fieldgroup_fields,
+                   self._delete_users, self._delete_records, self._delete_record_views]:
             fn(data)
             
                 
+
                 
 
+    def _insert_views(self, data):
+        self._insert_named_records(data['views'], models.View, models.View_Name, 'ViewType',
+                                   [], ['ViewName'])
     def _update_views(self, data):
         self._update_named_records(data['views'], models.View, models.View_Name, 'ViewType',
                                   [], ['ViewName'])
+    def _delete_views(self, data):
+        self._delete_named_records(data['views'], models.View, models.View_Name, 'ViewType',
+                                  [], ['ViewName'])
+
+    def _insert_field_groups(self, data):
+        self._insert_named_records(data['field_groups'], models.FieldGroup, models.FieldGroup_Name, 
+                                   'DisplayFieldGroupID', 
+                                   ['DisplayOrder', 'ViewType'], 
+                                   ['Name'])
     def _update_field_groups(self, data):
         self._update_named_records(data['field_groups'], models.FieldGroup, models.FieldGroup_Name, 
                                    'DisplayFieldGroupID', 
                                    ['DisplayOrder', 'ViewType'], 
                                    ['Name'])
+    def _delete_field_groups(self, data):
+        self._delete_named_records(data['field_groups'], models.FieldGroup, models.FieldGroup_Name, 
+                                   'DisplayFieldGroupID', 
+                                   ['DisplayOrder', 'ViewType'], 
+                                   ['Name'])
 
-    def _update_fields(self, data):
-        self.new_fields = self._update_named_records(data['fields'], models.Field, models.Field_Name,
+
+    def _insert_fields(self, data):
+        self.new_fields = self._insert_named_records(data['fields'], models.Field, models.Field_Name,
                                    'FieldID',
                                    ['FieldName', 
                                     'DisplayOrder'],
                                    ['Name'])
+    def _update_fields(self, data):
+        self._update_named_records(data['fields'], models.Field, models.Field_Name,
+                                   'FieldID',
+                                   ['FieldName', 
+                                    'DisplayOrder'],
+                                   ['Name'])
+    def _delete_fields(self, data):
+        self._delete_named_records(data['fields'], models.Field, models.Field_Name,
+                                   'FieldID',
+                                   ['FieldName', 
+                                    'DisplayOrder'],
+                                   ['Name'])
+
+    def _insert_users(self,data):
+        self._insert_named_records(data['users'], models.Users, None, 'UserName',
+                                   ['PasswordHash', 'PasswordHashRepeat', 'PasswordHashSalt',
+                                    'ViewType', 'LangID'], [])
     def _update_users(self,data):
         self._update_named_records(data['users'], models.Users, None, 'UserName',
                                    ['PasswordHash', 'PasswordHashRepeat', 'PasswordHashSalt',
                                     'ViewType', 'LangID'], [])
+    def _delete_users(self,data):
+        self._delete_named_records(data['users'], models.Users, None, 'UserName',
+                                   ['PasswordHash', 'PasswordHashRepeat', 'PasswordHashSalt',
+                                    'ViewType', 'LangID'], [])
 
-    def _update_fieldgroup_fields(self, data):
+    def _insert_fieldgroup_fields(self,data):
         cols = ['DisplayFieldGroupID', 'FieldID']
         fn = itemgetter(*cols)
         source = set(imap(fn, data['fieldgroup_fields']))
@@ -122,32 +173,48 @@ class Pull(ViewBase):
 
         existing = set(map(tuple, session.execute(select([models.FieldGroup_Fields.c.DisplayFieldGroupID, models.FieldGroup_Fields.c.FieldID]))))
 
-        to_delete = [dict(zip(cols, x)) for x in existing-source]
-
-        d = models.FieldGroup_Fields.delete().where(and_(models.FieldGroup_Fields.c.DisplayFieldGroupID==bindparam('DisplayFieldGroupID'),models.FieldGroup_Fields.c.FieldID==bindparam('FieldID')))
-
-        session.execute(d, to_delete)
-
         to_add = [dict(zip(cols, x)) for x in source-existing]
         session.execute(models.FieldGroup_Fields.insert(), to_add)
 
-    def _update_records(self, data):
+        self._fieldgroup_fields_to_delete = existing-source
+
+    def _delete_fieldgroup_fields(self, data):
+        cols = ['DisplayFieldGroupID', 'FieldID']
+        to_delete = [dict(zip(cols,x)) for x in self._fieldgroup_fields_to_delete]
+
+        session = self.request.dbsession
+        d = delete(models.FieldGroup_Fields).where(and_(models.FieldGroup_Fields.c.DisplayFieldGroupID==bindparam('DisplayFieldGroupID'),models.FieldGroup_Fields.c.FieldID==bindparam('FieldID')))
+
+        session.execute(d, to_delete)
+
+
+    def _insert_records(self, data):
         cols = ['NUM', 'LangID']
         session = self.request.dbsession
-        records = set(map(itemgetter(*cols), data['records_views']))
 
-        for record in session.query(models.Record).all():
-            if (record.NUM, record.LangID) in records:
-                records.remove((record.NUM, record.LangID))
-            else:
-                session.delete(record)
+        source = set(map(itemgetter(*cols), data['records_views']))
 
-        for num, lang in records:
-            session.add(models.Record(NUM=num, LangID=lang))
+        existing = set(map(tuple, session.execute(select([models.Record.NUM, models.Record.LangID]))))
 
-        self.unseen_records = [dict(zip(cols, x)) for x in records]
+        to_add = [dict(zip(cols, x)) for x in source-existing]
+        if to_add:
+            self.request.data_records = to_add
+            session.execute(insert(models.Record.__table__).values({models.Record.NUM:bindparam('NUM'),models.Record.LangID:bindparam('LangID')}), to_add)
 
-    def _update_record_views(self,data):
+        self._records_to_delete = existing-source
+
+    def _delete_records(self, data):
+        cols = ['NUM', 'LangID']
+
+        session = self.request.dbsession
+
+        to_delete = [dict(zip(cols, x)) for x in self._records_to_delete]
+        d = delete(models.Record.__table__).where(and_(models.Record.NUM==bindparam('NUM'),models.Record.LangID==bindparam('LangID')))
+
+        session.execute(d, to_delete)
+
+
+    def _insert_record_views(self,data):
         cols = ['NUM', 'ViewType']
         source = set(imap(itemgetter(*cols), data['records_views']))
 
@@ -156,19 +223,17 @@ class Pull(ViewBase):
         
         existing = set(map(tuple, session.execute(models.Record_Views.select())))
 
-        to_delete = existing-source
-
-        d = models.Record_Views.delete().where(and_(models.Record_Views.c.NUM==bindparam('NUM'),models.Record_Views.c.ViewType==bindparam('ViewType')))
-        session.execute(d, [dict(zip(cols, x)) for x in to_delete])
-
-        try:
-            session.flush()
-        except StaleDataError:
-            pass
-
         to_add = [dict(zip(cols,x)) for x in source-existing]
         session.execute(models.Record_Views.insert(), to_add)
 
+        self._record_views_to_delete = existing-source
+
+    def _delete_record_views(self, data):
+        cols = ['NUM', 'ViewType']
+        session = self.request.dbsession
+
+        d = models.Record_Views.delete().where(and_(models.Record_Views.c.NUM==bindparam('NUM'),models.Record_Views.c.ViewType==bindparam('ViewType')))
+        session.execute(d, [dict(zip(cols, x)) for x in self._records_to_delete])
 
     def _update_record_data(self, data):
         session = self.request.dbsession
@@ -210,7 +275,7 @@ class Pull(ViewBase):
         source = set([x[primary_key] for x in items])
 
         pk = getattr(item_model, primary_key)
-        existing = set(session.query(pk).all())
+        existing = set(x[0] for x in session.query(pk).all())
 
         to_insert = [x for x in items if x[primary_key] in source-existing]
         keyfn = itemgetter(primary_key)
@@ -220,7 +285,6 @@ class Pull(ViewBase):
             names = []
             for i,source_item in enumerate(group):
                 if not i:
-                    source_item = group
                     kw = {f: source_item[f] for f in primary_updates}
                     kw[primary_key] = key
                     item = item_model(**kw)
@@ -241,7 +305,7 @@ class Pull(ViewBase):
         if name_model:
             source = set([(x[primary_key], x['LangID']) for x in items])
             pk = getattr(name_model, primary_key)
-            lang = getattr(name_model, 'LangID')
+            lang = name_model.LangID
             existing = set(session.query(pk,lang).all())
             names_to_insert = [x for x in items if (x[primary_key], x['LangID']) in source-existing]
 
@@ -254,84 +318,65 @@ class Pull(ViewBase):
 
         return to_insert
 
+    def _delete_named_records(self, items, item_model, name_model, primary_key, primary_updates, name_updates):
+        session = self.request.dbsession
+
+        if name_model:
+            source = set([(x[primary_key],x['LangID']) for x in items])
+            pk = getattr(name_model, primary_key)
+            lang = name_model.LangID
+            existing = set(session.query(pk,lang).all())
+            to_delete = existing-source
+
+            d = delete(name_model.__table__).where(and_(getattr(name_model, primary_key)==bindparam(primary_key), name_model.LangID==bindparam('LangID')))
+            session.execute(d, [{primary_key: x[0], 'LangID': x[1]} for x in to_delete])
+
+        source = set([x[primary_key] for x in items])
+
+        pk = getattr(item_model, primary_key)
+        existing = set(x[0] for x in session.query(pk).all())
+
+        to_delete = existing-source
+
+        d = delete(item_model.__table__).where(getattr(item_model, primary_key)==bindparam(primary_key))
+        session.execute(d, [{primary_key: x} for x in to_delete])
 
     def _update_named_records(self, items, item_model, name_model, primary_key, primary_updates, name_updates):
         session = self.request.dbsession
         id_map = {}
-
+        
         keyfn = itemgetter(primary_key)
         items.sort(key=keyfn)
 
         for key, group in groupby(items, keyfn):
-            id_map[key] = {x['LangID']: x for x in group}
+            id_map[key] = list(group)
 
-        query = session.query(item_model)
+        source = set(id_map.keys())
+
+        pk = getattr(item_model, primary_key)
+
+        existing = set(x[0] for x in session.query(pk).all())
+
+        to_update = existing & source
+
+        if primary_updates:
+            kw = {getattr(item_model,x): bindparam(x) for x in primary_updates}
+            u = update(item_model.__table__).where(getattr(item_model, primary_key)==bindparam('pk')).\
+                        values(kw)
+            upd = (id_map[x][0] for x in to_update)
+            cols = [primary_key] + primary_updates
+            keyfn = itemgetter(*cols)
+            cols = ['pk'] + primary_updates
+            session.execute(u, [dict(zip(cols, keyfn(x))) for x in upd])
+
         if name_model:
-            query = query.options(subqueryload(item_model.names))
-        for item in query.all():
-            item_id = getattr(item, primary_key)
-            if item_id not in id_map:
-                session.delete(item)
-                continue
-
-            items_to_update = id_map.pop(item_id)
-            langs = set(items_to_update.keys())
-
-            source_item = items_to_update.values()[0]
-            for field in primary_updates:
-                setattr(item, field, source_item[field])
-
-            if not name_model:
-                #only primary model
-                continue 
-
-            for name in item.names:
-                if name.LangID not in items_to_update:
-                    session.delete(name)
-                    continue
-
-                source_item = items_to_update[name.LangID]
-                langs.remove(name.LangID)
-
-                for field in name_updates:
-                    setattr(name, field, source_item[field])
-
-            for lang in langs:
-                source_item = items_to_update[lang]
-                kw = {f: source_item[f] for f in name_updates}
-                name = name_model(LangID=lang, **kw)
-                item.names.append(name)
-
-
-        for item_id,items_to_update in id_map.iteritems():
-            source_item = items_to_update.values()[0]
-            kw = {f: source_item[f] for f in primary_updates}
-            kw[primary_key] = item_id
-
-            item = item_model(**kw)
-
-            if name_model:
-                names = []
-                for lang,source_item in items_to_update.items():
-                    kw = {f: source_item[f] for f in name_updates}
-                    names.append(name_model(LangID=lang, **kw))
-
-                item.names = names
-
-            session.add(item)
-
-        return id_map.keys()
-
-                
-
-                
-                
-
-
-
-
-
-
-
-               
+            kw = {getattr(name_model,x): bindparam(x) for x in name_updates}
+            u = update(name_model.__table__).where(and_(getattr(name_model, primary_key)==bindparam('pk'), name_model.LangID==bindparam('langid'))).\
+                    values(kw)
+            upd = (y for x in to_update for y in id_map[x])
+            cols = [primary_key, 'LangID'] + name_updates
+            keyfn = itemgetter(*cols)
+            cols = ['pk', 'langid'] + name_updates
+            session.execute(u, [dict(zip(cols, keyfn(x))) for x in upd])
+            
 
