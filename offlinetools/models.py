@@ -37,7 +37,7 @@ class Language(Base):
 class LangMixIn(object):
     @declared_attr
     def LangID(cls):
-        return Column(Integer, ForeignKey('Language.LangID'), primary_key=True)
+        return Column(Integer, ForeignKey('Language.LangID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
 
     @declared_attr
     def language(cls):
@@ -51,8 +51,31 @@ class View(Base):
     users = relationship('Users', cascade='all', backref='view')
 
 class View_Name(LangMixIn, Base):
-    ViewType = Column(Integer, ForeignKey(View.ViewType), primary_key=True)
+    ViewType = Column(Integer, ForeignKey(View.ViewType, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
     ViewName = Column(Unicode(255))
+
+class Community(Base):
+    CM_ID = Column(Integer, primary_key=True)
+    names = relationship('Community_Name', cascade='all', backref='community')
+
+class Community_Name(LangMixIn, Base):
+    CM_ID = Column(Integer, ForeignKey(Community.CM_ID, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    Name = Column(Unicode(255))
+
+class Publication(Base):
+    ListID = Column(Unicode(50), primary_key=True)
+    names = relationship('Publication_Name', cascade='all', backref='publication')
+    views = relationship('View', secondary='Publication_View', backref='publications')
+
+class Publication_Name(LangMixIn, Base):
+    ListID = Column(Unicode(50), ForeignKey(Publication.ListID, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    Name = Column(Unicode(255))
+
+
+Publication_View = Table('Publication_View', Base.metadata,
+    Column('ListID', Unicode(50), ForeignKey(Publication.ListID, onupdate='CASCADE', ondelete='CASCADE')),
+    Column('ViewType', Integer, ForeignKey(View.ViewType, onupdate='CASCADE', ondelete='CASCADE'))
+)
 
 
 FieldGroup_Fields = Table('FieldGroup_Fields', Base.metadata,
@@ -60,10 +83,12 @@ FieldGroup_Fields = Table('FieldGroup_Fields', Base.metadata,
     Column('DisplayFieldGroupID', Integer, ForeignKey('FieldGroup.DisplayFieldGroupID', onupdate='CASCADE', ondelete='CASCADE'))
 )
 
+
+
 class FieldGroup(Base):
     DisplayFieldGroupID = Column(Integer, primary_key=True)
     DisplayOrder = Column(Integer)
-    ViewType = Column(Integer, ForeignKey(View.ViewType))
+    ViewType = Column(Integer, ForeignKey(View.ViewType, onupdate='CASCADE', ondelete='CASCADE'))
     names = relationship('FieldGroup_Name', cascade="all", backref='group')
     views = relationship('View', cascade='all', backref='fieldgroup')
 
@@ -87,15 +112,29 @@ Record_Views = Table('Record_Views', Base.metadata,
     Column('NUM', Unicode(8), ForeignKey('Record.NUM', ondelete='CASCADE', onupdate='CASCADE')),
     Column('ViewType', Integer, ForeignKey(View.ViewType, ondelete='CASCADE', onupdate='CASCADE'))
 )
+
+Record_Publication = Table('Record_Publication', Base.metadata,
+    Column('NUM', Unicode(8), ForeignKey('Record.NUM', ondelete='CASCADE', onupdate='CASCADE')),
+    Column('ListID', Unicode(50), ForeignKey(Publication.ListID, ondelete='CASCADE', onupdate='CASCADE'))
+)
+
+Record_Community = Table('Record_Community', Base.metadata,
+    Column('NUM', Unicode(8), ForeignKey('Record.NUM', ondelete='CASCADE', onupdate='CASCADE')),
+    Column('CM_ID', Integer, ForeignKey(Community.CM_ID, ondelete='CASCADE', onupdate='CASCADE'))
+)
+
+
     
 class Record(LangMixIn,Base):
     NUM = Column(Unicode(8), primary_key=True)
     views = relationship('View', secondary=Record_Views, backref='records')
+    publications = relationship('Publication', secondary=Record_Publication, backref='records')
+    communities = relationship('Community', secondary=Record_Community, backref='records')
 
 
 class Record_Data(Base):
     NUM = Column(Unicode(8), ForeignKey('Record.NUM', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    LangID = Column(Integer, ForeignKey('Record.LangID'), primary_key=True)
+    LangID = Column(Integer, ForeignKey('Record.LangID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
     FieldID = Column(Integer, ForeignKey('Field.FieldID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
 
     Value = Column(Unicode)
@@ -105,12 +144,13 @@ class Record_Data(Base):
 
 
 
+
 class Users(LangMixIn, Base):
     UserName = Column(Unicode(50), primary_key=True)
     PasswordHash = Column(Unicode(33))
     PasswordHashSalt = Column(Unicode(33))
     PasswordHashRepeat = Column(Integer)
-    ViewType = Column(Integer, ForeignKey(View.ViewType))
+    ViewType = Column(Integer, ForeignKey(View.ViewType, onupdate='CASCADE', ondelete='CASCADE'))
 
 
 class ConfigData(Base):

@@ -84,20 +84,23 @@ class Pull(ViewBase):
         
         # insert
 
-        for fn in [self._insert_views, self._insert_field_groups, 
+        for fn in [self._insert_views, self._insert_communities, self._insert_publications,
+                   self._insert_publication_views, self._insert_field_groups, 
                    self._insert_fields, self._insert_fieldgroup_fields,
-                   self._insert_users, self._insert_records, self._insert_record_views]:
+                   self._insert_users, self._insert_records, self._insert_record_views,
+                   self._insert_records_communities, self._insert_records_publications]:
             fn(data)
 
-        for fn in [self._update_views, self._update_field_groups, 
-                   self._update_fields, 
-                  self._update_users, 
+        for fn in [self._update_views, self._update_communities, self._update_publications,
+                   self._update_field_groups, self._update_fields, self._update_users, 
                   self._update_record_data]:
             fn(data)
 
-        for fn in [self._delete_views, self._delete_field_groups, 
+        for fn in [self._delete_views, self._delete_communities, self._delete_publications,
+                   self._delete_publication_views, self._delete_field_groups, 
                    self._delete_fields, self._delete_fieldgroup_fields,
-                   self._delete_users, self._delete_records, self._delete_record_views]:
+                   self._delete_users, self._delete_records, self._delete_record_views,
+                   self._delete_records_communities, self._delete_records_publications]:
             fn(data)
             
                 
@@ -163,30 +166,94 @@ class Pull(ViewBase):
                                    ['PasswordHash', 'PasswordHashRepeat', 'PasswordHashSalt',
                                     'ViewType', 'LangID'], [])
 
-    def _insert_fieldgroup_fields(self,data):
-        cols = ['DisplayFieldGroupID', 'FieldID']
+    def _insert_communities(self,data):
+        self._insert_named_records(data['communities'], models.Community, models.Community_Name, 'CM_ID',
+                                   [], ['Name'])
+    def _update_communities(self,data):
+        self._update_named_records(data['communities'], models.Community, models.Community_Name, 'CM_ID',
+                                   [], ['Name'])
+    def _delete_communities(self,data):
+        self._delete_named_records(data['communities'], models.Community, models.Community_Name, 'CM_ID',
+                                   [], ['Name'])
+
+
+    def _insert_publications(self,data):
+        self._insert_named_records(data['publications'], models.Publication, models.Publication_Name, 'ListID',
+                                   [], ['Name'])
+    def _update_publications(self,data):
+        self._update_named_records(data['publications'], models.Publication, models.Publication_Name, 'ListID',
+                                   [], ['Name'])
+    def _delete_publications(self,data):
+        self._delete_named_records(data['publications'], models.Publication, models.Publication_Name, 'ListID',
+                                   [], ['Name'])
+
+
+    def _insert_multi_relation(self, data, cols, item_model):
         fn = itemgetter(*cols)
-        source = set(imap(fn, data['fieldgroup_fields']))
+        source = set(imap(fn, data))
 
         session = self.request.dbsession
         session.flush()
 
-        existing = set(map(tuple, session.execute(select([models.FieldGroup_Fields.c.DisplayFieldGroupID, models.FieldGroup_Fields.c.FieldID]))))
+        existing = set(map(tuple, session.execute(select([getattr(item_model.c, x) for x in cols]))))
 
         to_add = [dict(zip(cols, x)) for x in source-existing]
-        session.execute(models.FieldGroup_Fields.insert(), to_add)
+        session.execute(item_model.insert(), to_add)
 
-        self._fieldgroup_fields_to_delete = existing-source
+        return existing-source
 
-    def _delete_fieldgroup_fields(self, data):
-        cols = ['DisplayFieldGroupID', 'FieldID']
-        to_delete = [dict(zip(cols,x)) for x in self._fieldgroup_fields_to_delete]
+    def _delete_multi_relation(self, cols, item_model, to_delete):
+        to_delete = [dict(zip(cols,x)) for x in to_delete]
 
         session = self.request.dbsession
-        d = delete(models.FieldGroup_Fields).where(and_(models.FieldGroup_Fields.c.DisplayFieldGroupID==bindparam('DisplayFieldGroupID'),models.FieldGroup_Fields.c.FieldID==bindparam('FieldID')))
+        d = delete(item_model).where(and_(*[getattr(item_model.c, x) == bindparam(x) for x in cols]))
 
         session.execute(d, to_delete)
+    
+    def _insert_fieldgroup_fields(self,data):
+        self._fieldgroup_fields_to_delete = self._insert_multi_relation(
+            data['fieldgroup_fields'], ['DisplayFieldGroupID', 'FieldID'], models.FieldGroup_Fields)
 
+    def _delete_fieldgroup_fields(self,data):
+        self._delete_multi_relation(['DisplayFieldGroupID', 'FieldID'], models.FieldGroup_Fields,
+                                    self._fieldgroup_fields_to_delete)
+
+
+    def _insert_record_views(self,data):
+        self._record_views_to_delete = self._insert_multi_relation(
+            data['records_views'], ['NUM', 'ViewType'], models.Record_Views)
+
+    def _delete_record_views(self,data):
+        self._delete_multi_relation(['NUM', 'ViewType'], models.Record_Views,
+                                    self._record_views_to_delete)
+
+
+    def _insert_publication_views(self,data):
+        self._publication_views_to_delete = self._insert_multi_relation(
+            data['view_publications'], ['ListID', 'ViewType'], models.Publication_View)
+
+    def _delete_publication_views(self,data):
+        self._delete_multi_relation(['ListID', 'ViewType'], models.Publication_View,
+                                    self._publication_views_to_delete)
+
+
+    def _insert_records_communities(self,data):
+        self._record_communities_to_delete = self._insert_multi_relation(
+            data['record_communities'], ['NUM', 'CM_ID'], models.Record_Community)
+
+    def _delete_records_communities(self,data):
+        self._delete_multi_relation(['NUM', 'CM_ID'], models.Record_Community,
+                                    self._record_communities_to_delete)
+        
+
+    def _insert_records_publications(self,data):
+        self._record_publications_to_delete = self._insert_multi_relation(
+            data['record_publications'], ['NUM', 'ListID'], models.Record_Publication)
+
+    def _delete_records_publications(self,data):
+        self._delete_multi_relation(['NUM', 'ListID'], models.Record_Publication,
+                                    self._record_publications_to_delete)
+        
 
     def _insert_records(self, data):
         cols = ['NUM', 'LangID']
@@ -204,6 +271,9 @@ class Pull(ViewBase):
         self._records_to_delete = existing-source
 
     def _delete_records(self, data):
+        if not self._records_to_delete:
+            return
+
         cols = ['NUM', 'LangID']
 
         session = self.request.dbsession
@@ -212,28 +282,6 @@ class Pull(ViewBase):
         d = delete(models.Record.__table__).where(and_(models.Record.NUM==bindparam('NUM'),models.Record.LangID==bindparam('LangID')))
 
         session.execute(d, to_delete)
-
-
-    def _insert_record_views(self,data):
-        cols = ['NUM', 'ViewType']
-        source = set(imap(itemgetter(*cols), data['records_views']))
-
-        session = self.request.dbsession
-        session.flush()
-        
-        existing = set(map(tuple, session.execute(models.Record_Views.select())))
-
-        to_add = [dict(zip(cols,x)) for x in source-existing]
-        session.execute(models.Record_Views.insert(), to_add)
-
-        self._record_views_to_delete = existing-source
-
-    def _delete_record_views(self, data):
-        cols = ['NUM', 'ViewType']
-        session = self.request.dbsession
-
-        d = models.Record_Views.delete().where(and_(models.Record_Views.c.NUM==bindparam('NUM'),models.Record_Views.c.ViewType==bindparam('ViewType')))
-        session.execute(d, [dict(zip(cols, x)) for x in self._records_to_delete])
 
     def _update_record_data(self, data):
         session = self.request.dbsession
