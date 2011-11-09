@@ -24,7 +24,7 @@
   <!-- CSS: implied media=all -->
   <!-- CSS concatenated and minified via ant build script-->
   <!-- XXX only local styles -->
-  <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/redmond/jquery-ui.css" type="text/css" />
+  <link rel="stylesheet" href="/static/css/jquery-ui-1.8.16.custom.css" type="text/css" />
   <link rel="stylesheet" href="/static/css/style.css">
   <style type="text/css">
     /* fix the broken font handling in default jquery-ui styles */
@@ -50,11 +50,11 @@
 <div id="wrap">
 <header class="ui-widget-header" style="padding-left: 1em;">
 <nav class="site-nav"><%block name="sitenav">
-<%block name="newsearch"><a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_url('home')}"><span class="ui-icon ui-icon-search ui-button-icon-primary"></span><span class="ui-button-text">New Search</span></a></%block>
-<a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_path('logout')}"><span class="ui-icon ui-icon-power ui-button-icon-primary"></span><span class="ui-button-text">Logout</span></a>
+<%block name="newsearch"><a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_url('search')}"><span class="ui-icon ui-icon-search ui-button-icon-primary"></span><span class="ui-button-text">${_('New Search')}</span></a></%block>
+<a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_path('logout')}"><span class="ui-icon ui-icon-power ui-button-icon-primary"></span><span class="ui-button-text">${_('Logout')}</span></a>
 </%block>
 </nav>
-<h1 style="margin: 0;">CIOC Offline Tools for [INSERT DB]</h1>
+<h1 style="margin: 0;">${_('CIOC Offline Tools for [INSERT DB]')}</h1>
 </header>
 <header id="pagetitle">
 <h1 class="clearfix"><%block name="searchnav"/>${self.title()}</h1>
@@ -85,8 +85,8 @@
 
   <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
   <!-- XXX only local scripts -->
-  <script src="/static/js/libs/jquery-1.6.2.min.js"></script>
-  <!-- <script src="/ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script> -->
+  <script src="/static/js/libs/jquery-1.7.min.js"></script>
+  <script src="/static/js/libs/jquery-ui-1.8.16.custom.min.js"></script>
 
   
   <!-- scripts concatenated and minified via ant build script-->
