@@ -1,5 +1,6 @@
 import transaction
 
+import sqlalchemy
 from sqlalchemy import Column, Integer, Unicode, DateTime, Boolean, ForeignKey, Table
 
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
@@ -215,14 +216,21 @@ def initialize_languages(session):
     languages = session.query(Language).all()
     syslanguage.update_cultures(asdict(l) for l in languages)
         
+def on_connect_set_pragmas(dbapi_connection, connection_record):
+    dbapi_connection.execute('PRAGMA cache_size=20000')
+    dbapi_connection.execute('PRAGMA synchronous=1')
 
 
 def initialize_sql(engine):
+    sqlalchemy.event.listen(sqlalchemy.pool.Pool, 'connect', on_connect_set_pragmas)
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
     log.debug('About to create SQL Tables *****************************************')
     Base.metadata.create_all(engine)
     session=DBSession()
+    connection = session.connection()
+    connection.execute('PRAGMA cache_size=20000')
+    connection.execute('PRAGMA synchronous=1')
     try:
         get_config()
     except IntegrityError:
