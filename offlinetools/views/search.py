@@ -57,24 +57,22 @@ class Search(ViewBase):
                 + ',\n'.join(name_tmpl.format(i) for i in range(1,6)) + 
                '''
 
-               FROM Record_Data bt
-               INNER JOIN Record_Views rv
-                    ON rv.NUM=bt.NUM AND ViewType=?''')]
+               FROM Record bt
+               ''')]
 
         args = [field_ids['LOCATED_IN_CM'], LangID]
         args.extend(chain.from_iterable(izip(repeat(LangID, 5), (field_ids[x] for x in field_names[:5]))))
-        args.append(ViewType)
 
 #        filters = [models.Record.views.any(models.View.ViewType==ViewType), 
 #                   models.Record.LangID==LangID]
+        where = ['bt.LangID=?', 'EXISTS(SELECT 1 FROM Record_Views WHERE NUM=bt.NUM AND ViewType=?)']
+        args.extend([LangID, ViewType])
+
         quick_list = model_state.value('QuickList')
         if quick_list:
 #            filters.append(models.Record.publications.any(models.Publication.ListID==quick_list))
-            sql.append('\nINNER JOIN Record_Publication rp ON rp.NUM=bt.NUM AND ListID=?')
+            where.append('\nEXISTS(SELECT 1 FROM Record_Publication rp WHERE rp.NUM=bt.NUM AND ListID=?)')
             args.append(quick_list)
-
-        where = ['bt.LangID=?']
-        args.append(LangID)
 
 
         if model_state.value('Terms'):
@@ -140,10 +138,8 @@ class Search(ViewBase):
         #    stmt = stmt.outerjoin(substmt, models.Record.NUM==substmt.NUM)
         
         #results = stmt.filter(and_(*filters)).all()
-        sql = ''.join(sql + ['\nWHERE\n\t' , '\nAND\n\t'.join(where)])
+        sql = ''.join(['SELECT * FROM ('] + sql + ['\nWHERE\n\t' , '\nAND\n\t'.join(where),') AS iq ORDER BY iq.ORG_LEVEL_1 COLLATE NOCASE, iq.ORG_LEVEL_2 COLLATE NOCASE, iq.ORG_LEVEL_3 COLLATE NOCASE, iq.ORG_LEVEL_4 COLLATE NOCASE, iq.ORG_LEVEL_5 COLLATE NOCASE, NUM'])
         connection = session.connection()
-        connection.execute('PRAGMA cache_size=20000')
-        connection.execute('PRAGMA synchronous=1')
         results = map(tuple,connection.execute(sql, *args))
 
         
