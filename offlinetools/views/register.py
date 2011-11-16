@@ -42,7 +42,7 @@ class Register(ViewBase):
         if cfg.machine_name:
             #maybe allow updateing info
             request.session.flash(_('Site Already Registered.'))
-            return HTTPFound(url=request.route_url('home'))
+            return HTTPFound(url=request.route_url('search'))
 
         model_state.schema = RegisterSchema()
 
@@ -130,7 +130,7 @@ class Register(ViewBase):
         cfg.machine_name = model_state.value('MachineName')
         cfg.site_title = model_state.value('SiteTitle')
         request.session.flash(_('Success'))
-        return HTTPFound(request.route_url('home'))
+        return HTTPFound(request.route_url('search'))
 
 
     @view_config(route_name="register", renderer="register.mak")
@@ -142,7 +142,7 @@ class Register(ViewBase):
         if cfg.machine_name or cfg.update_url:
             #maybe allow updateing info
             request.session.flash(_('Site Already Registered.'))
-            return HTTPFound(url=request.route_url('home'))
+            return HTTPFound(url=request.route_url('search'))
 
 
         return {}

@@ -60,7 +60,8 @@ def main(global_config, **settings):
     config.add_translation_dirs('offlinetools:locale')
     config.add_static_view('static', 'offlinetools:static', cache_max_age=3600, permission=NO_PERMISSION_REQUIRED)
 
-    config.add_route('home', '/', pregenerator=passvars_pregen)
+    config.add_route('search', '/', pregenerator=passvars_pregen)
+    config.add_route('results', '/results', pregenerator=passvars_pregen)
 
     config.add_route('record', '/record/{num}', factory='offlinetools.views.record.RecordRootFactory', pregenerator=passvars_pregen)
 

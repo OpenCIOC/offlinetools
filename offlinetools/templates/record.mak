@@ -1,7 +1,7 @@
 <%inherit file="master.mak"/>
 <%block name="title">${_('Record Details')}</%block>
 
-<table>
+<table class="form-table">
 %for group in field_groups:
 <% group_fields = fields.get(group.DisplayFieldGroupID) %>
 %if group_fields:

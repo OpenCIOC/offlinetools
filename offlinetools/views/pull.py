@@ -168,13 +168,13 @@ class Pull(ViewBase):
 
     def _insert_communities(self,data):
         self._insert_named_records(data['communities'], models.Community, models.Community_Name, 'CM_ID',
-                                   [], ['Name'])
+                                   ['ParentCommunity'], ['Name'])
     def _update_communities(self,data):
         self._update_named_records(data['communities'], models.Community, models.Community_Name, 'CM_ID',
-                                   [], ['Name'])
+                                   ['ParentCommunity'], ['Name'])
     def _delete_communities(self,data):
         self._delete_named_records(data['communities'], models.Community, models.Community_Name, 'CM_ID',
-                                   [], ['Name'])
+                                   ['ParentCommunity'], ['Name'])
 
 
     def _insert_publications(self,data):

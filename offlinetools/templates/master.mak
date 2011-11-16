@@ -63,11 +63,7 @@
     <div id="main" role="main">
 	<% message = request.session.pop_flash() %>
 	%if message:
-		<div class="ui-widget error-notice clearfix">
-			<div class="ui-state-highlight ui-corner-all error-notice-wrapper"> 
-				<p><span class="ui-icon ui-icon-info error-notice-icon"></span> ${message[0]} </p>
-			</div>
-		</div>
+        ${printInfoMessage(message[0])}
 	%endif
 
     ${next.body()}
@@ -98,3 +94,11 @@
 	
 </body>
 </html>
+
+<%def name="printInfoMessage(message)">
+    <div class="ui-widget error-notice clearfix">
+        <div class="ui-state-highlight ui-corner-all error-notice-wrapper"> 
+            <p><span class="ui-icon ui-icon-info error-notice-icon"></span> ${message} </p>
+        </div>
+    </div>
+</%def>
