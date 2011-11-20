@@ -4,3 +4,11 @@ transaction
 pyramid_tm
 pyramid_debugtoolbar
 zope.sqlalchemy
+formencode
+paste
+pyramid_beaker
+requests
+backports.ssl_match_hostname
+PyCrypto
+webhelpers
+pyramid_simpleform

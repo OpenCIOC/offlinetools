@@ -277,6 +277,10 @@ span.ui-icon.menu-icon {
 .ie7 ol { list-style-type: decimal; list-style-position:inside; }
 .ie7 li {display: list-item; }
 
+.record-header td {
+    padding: .5em;
+}
+
 
 /* ==|== non-semantic helper classes ========================================
    Please define your styles before this section.
@@ -324,9 +328,6 @@ span.ui-icon.menu-icon {
 }
 
 @media only screen and (max-width: 400px) {
-	.form-table td, .form-table tr {
-		display: block;
-	}
 	.url, .email, .text, .password, select {
 		width: 18em;
 	}

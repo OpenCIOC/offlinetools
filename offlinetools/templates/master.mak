@@ -54,7 +54,7 @@
 <a class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary" href="${request.route_path('logout')}"><span class="ui-icon ui-icon-power ui-button-icon-primary"></span><span class="ui-button-text">${_('Logout')}</span></a>
 </%block>
 </nav>
-<h1 style="margin: 0;">${_('CIOC Offline Tools for [INSERT DB]')}</h1>
+<h1 style="margin: 0;">${_('CIOC Offline Tools')}${site_title}</h1>
 </header>
 <header id="pagetitle">
 <h1 class="clearfix"><%block name="searchnav"/>${self.title()}</h1>

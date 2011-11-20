@@ -67,13 +67,17 @@ class Record(ViewBase):
         fields = {k: list(v) for k,v in groupby(fields, itemgetter(0))}
 
 
-        record_data = session.query(models.Record_Data.FieldID,models.Record_Data.Value).\
-                filter(and_(models.Record_Data.NUM==num, models.Record_Data.LangID==LangID)).all()
+        record_data = (session.query(models.Record_Data.FieldID,models.Record_Data.Value,models.Field.FieldName).
+                join(models.Field, models.Record_Data.FieldID==models.Field.FieldID).
+                filter(and_(models.Record_Data.NUM==num, models.Record_Data.LangID==LangID)).all())
 
+        core_fields = set('ORG_LEVEL_%d' % i for i in range(1,6))
+        core_fields.update(['NON_PUBLIC', 'UPDATE_DATE'])
+        core_data = {x.FieldName: x.Value for x in record_data if x.FieldName in core_fields}
         record_data = {x.FieldID: x for x in record_data}
 
 
 
-        return {'field_groups':field_groups, 'fields': fields, 'record_data': record_data}
+        return {'num': num, 'field_groups':field_groups, 'fields': fields, 'record_data': record_data, 'core_data': core_data}
 
 

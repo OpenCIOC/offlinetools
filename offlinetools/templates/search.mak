@@ -3,7 +3,7 @@
 <%block name="newsearch"/>
 
 ${renderer.error_notice()}
-<form method="get" action="${request.route_url('results', _form=True)}">
+<form method="get" action="${request.route_url('results', _form=True)}" id="SearchForm">
 ${renderer.form_passvars()}
 	<table class="form-table">
 		<tr>
@@ -37,4 +37,21 @@ ${renderer.form_passvars()}
 
 <%block name="bottomscripts">
 
+	<form class="hidden" name="stateForm" id="stateForm">
+	<textarea id="cache_form_values"></textarea>
+	</form>
+
+	<script type="text/javascript" src="static/js/search.min.js"></script>
+	<script type="text/javascript">
+	(function() {
+	jQuery(function($) {
+
+		init_cached_state('#SearchForm');
+
+		init_community_autocomplete($, 'Community', "${request.route_url('comgen')}", 3);
+
+		restore_cached_state();
+		});
+	})();
+	</script>
 </%block>

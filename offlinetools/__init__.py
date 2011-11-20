@@ -4,12 +4,16 @@ from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
 from pyramid_beaker import session_factory_from_settings
 
-from offlinetools.models import initialize_sql
-from offlinetools.request import passvars_pregen
-
 from pyramid.authentication import SessionAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.security import NO_PERMISSION_REQUIRED, Authenticated, Deny, Allow, Everyone
+
+from win32com.shell import shell, shellcon
+
+from offlinetools.models import initialize_sql
+from offlinetools.request import passvars_pregen
+
+
 
 import requests
 
@@ -45,9 +49,23 @@ def main(global_config, **settings):
         from offlinetools.httpsfix import install_validating_https
         install_validating_https(os.path.abspath(cacerts))
 
-    engine = engine_from_config(settings, 'sqlalchemy.')
+    common_appdata_path =  shell.SHGetFolderPath (0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
+    app_data_dir = os.path.join(common_appdata_path, 'CIOC', 'OfflineTools')
+    try:
+        os.makedirs(app_data_dir)
+    except os.error, e:
+        log.debug('os.error: %s', e)
+
+    sa_config = {'sqlalchemy.url': 'sqlite:///%s\\OfflineTools.db' % app_data_dir}
+    engine = engine_from_config(sa_config, 'sqlalchemy.')
     initialize_sql(engine)
 
+    session_lock_dir = os.path.join(app_data_dir, 'session')
+    try:
+        os.makedirs(session_lock_dir)
+    except os.error, e:
+        log.debug('os.error: %s', e)
+    settings['beaker.session.lock_dir'] = session_lock_dir
     session_factory = session_factory_from_settings(settings)
 
     authn_policy = SessionAuthenticationPolicy(callback=groupfinder, debug=True)
@@ -64,6 +82,7 @@ def main(global_config, **settings):
     config.add_route('results', '/results', pregenerator=passvars_pregen)
 
     config.add_route('record', '/record/{num}', factory='offlinetools.views.record.RecordRootFactory', pregenerator=passvars_pregen)
+    config.add_route('comgen', '/comgen', pregenerator=passvars_pregen)
 
     config.add_route('login', '/login', pregenerator=passvars_pregen)
     config.add_route('logout', '/logout', pregenerator=passvars_pregen)

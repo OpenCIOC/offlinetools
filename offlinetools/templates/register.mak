@@ -1,5 +1,5 @@
 ﻿<%inherit file="master.mak"/>
-<%block name="title">${_('Register With CIOC Database')}</%block>
+<%block name="title">${_('Connect to Your CIOC Database')}</%block>
 <%block name="sitenav"/>
 
 <%! import socket %>
