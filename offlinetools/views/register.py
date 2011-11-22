@@ -5,6 +5,7 @@ import requests
 
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPFound
+import transaction
 
 from offlinetools import models
 from offlinetools.views.base import ViewBase
@@ -36,13 +37,13 @@ class Register(ViewBase):
         _ = request.translate
 
         model_state = request.model_state
-        cfg = models.get_config(request)
+        cfg = request.config
 
 
         if cfg.machine_name:
             #maybe allow updateing info
             request.session.flash(_('Site Already Registered.'))
-            return HTTPFound(url=request.route_url('search'))
+            return HTTPFound(location=request.route_url('search'))
 
         model_state.schema = RegisterSchema()
 
@@ -53,13 +54,11 @@ class Register(ViewBase):
 
         headers = {'Accept': 'application/json'}
         r = requests.get(mapping_url, headers=headers)
-        if not r.ok:
-            if r.status_code:
-                log.error('unable to contact %s: %s', mapping_url, r.headers['status'])
-                model_state.add_error_for('*', _('Unable to connect to CIOC site: %s') % r.headers['status'])
-            else:
-                log.error('unable to contact %s: %s', mapping_url, r.error)
-                model_state.add_error_for('*', _('The CIOC Site had an unexpected error: %s') % r.error)
+        try:
+            r.raise_for_status()
+        except Exception, e:
+            log.error('unable to contact %s: %s, %s', mapping_url, r.headers['status'], e)
+            model_state.add_error_for('*', _('Unable to connect to CIOC servers: %s') % e)
             return {}
 
         if r.headers['content-type'].split(';')[0] != 'application/json':
@@ -95,13 +94,11 @@ class Register(ViewBase):
         url = '%s/offline/register?Ln=%s' % (sec_host, request.language.Culture)
         r = requests.post(url, data=params, headers=headers, auth=auth)
 
-        if not r.ok:
-            if r.status_code:
-                log.error('unable to contact %s: %s', url, r.headers['status'])
-                model_state.add_error_for('*', _('Unable to connect to Source CIOC site: %s') % r.headers['status'])
-            else:
-                log.error('unable to contact %s: %s', url, r.error)
-                model_state.add_error_for('*', _('The Source CIOC Site had an unexpected error: %s') % r.error)
+        try:
+            r.raise_for_status()
+        except Exception, e:
+            log.error('unable to contact %s: %s, %s', url, r.headers['status'], e)
+            model_state.add_error_for('*', _('Unable to connect to Source CIOC site: %s') % e)
             return {}
 
 
@@ -120,8 +117,8 @@ class Register(ViewBase):
 
 
         if data['fail']:
-            log.error('Unable to register with source cioc site: %s', data['reason'])
-            model_state.add_error_for('*', _('Unable to register with Source CIOC site: %s') % data['reason'])
+            log.error('Unable to register with source cioc site: %s', data['message'])
+            model_state.add_error_for('*', _('Unable to register with Source CIOC site: %s') % data['message'])
             return {}
 
 
@@ -129,8 +126,9 @@ class Register(ViewBase):
         cfg.update_url = sec_host
         cfg.machine_name = model_state.value('MachineName')
         cfg.site_title = model_state.value('SiteTitle')
-        request.session.flash(_('Success'))
-        return HTTPFound(request.route_url('search'))
+        request.dbsession.flush()
+        transaction.commit()
+        return HTTPFound(location=request.route_url('pull'))
 
 
     @view_config(route_name="register", renderer="register.mak")
@@ -142,7 +140,7 @@ class Register(ViewBase):
         if cfg.machine_name or cfg.update_url:
             #maybe allow updateing info
             request.session.flash(_('Site Already Registered.'))
-            return HTTPFound(url=request.route_url('search'))
+            return HTTPFound(location=request.route_url('search'))
 
 
         return {}

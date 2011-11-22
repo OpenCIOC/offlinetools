@@ -1,6 +1,7 @@
 import os
 
 from pyramid.config import Configurator
+from pyramid.httpexceptions import HTTPFound
 from sqlalchemy import engine_from_config
 from pyramid_beaker import session_factory_from_settings
 
@@ -35,8 +36,12 @@ class RootFactory(object):
     __acl__ = [(Allow, Authenticated, 'view'), (Deny, Everyone, 'view')]
 
     def __init__(self, request):
-        pass
+        if not request.config.machine_name:
+            self.__acl__ = [(Allow, Everyone, 'view')]
 
+
+def found_view(request):
+    return request.context
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -89,9 +94,12 @@ def main(global_config, **settings):
 
     config.add_route('register', '/register', pregenerator=passvars_pregen)
     config.add_route('pull', '/pull', pregenerator=passvars_pregen)
+    config.add_route('pull_status', '/pullstatus', pregenerator=passvars_pregen)
 
     config.add_subscriber('offlinetools.subscribers.add_renderer_globals',
                       'pyramid.events.BeforeRender')
+
+    #config.add_view(found_view, context=HTTPFound)
 
     config.scan()
     return config.make_wsgi_app()

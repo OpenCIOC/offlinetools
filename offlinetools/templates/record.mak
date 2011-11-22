@@ -16,8 +16,8 @@
 </tr>
 %for field in group_fields:
 <tr>
-    <td class="ui-widget-header">${field.Name}
-    <td>${textToHTML(record_data[field.FieldID].Value)}</td>
+    <td class="ui-widget-header field">${field.Name}
+    <td class="ui-widget-content">${textToHTML(record_data[field.FieldID].Value)}</td>
 </tr>
 
 %endfor

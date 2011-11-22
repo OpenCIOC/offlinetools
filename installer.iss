@@ -34,14 +34,14 @@ Name: "{group}\{cm:ProgramOnTheWeb,Outils déconnecté}"; Filename: http://localho
 
 
 [Run]
-Filename: {app}\wsgisvc.exe; Parameters: "install --startup auto"; WorkingDir: {app}; Flags: RunHidden; 
-Filename: {app}\wsgisvc.exe; Parameters: start; WorkingDir: {app}; Flags: RunHidden; 
+Filename: {app}\wsgisvc.exe; Parameters: "--startup auto install"; WorkingDir: {app}; Flags: RunHidden; 
+Filename: {app}\wsgisvc.exe; Parameters: "--wait 10 start"; WorkingDir: {app}; Flags: RunHidden; 
 Languages: english; Filename: http://localhost:8765/register; Flags: PostInstall ShellExec; Description: {cm:CompleteInstallation}; 
 Filename: http://localhost:8765/register?Ln=fr-CA; Flags: PostInstall ShellExec; Languages: french; Description: {cm:CompleteInstallation}; 
 
 [UninstallRun]
 Filename: {app}\wsgisvc.exe; Parameters: stop; WorkingDir: {app}; Flags: RunHidden; 
-Filename: {app}\wsgisvc.exe; Parameters: " remove"; WorkingDir: {app}; Flags: RunHidden;
+Filename: {app}\wsgisvc.exe; Parameters: "remove"; WorkingDir: {app}; Flags: RunHidden;
 
 [CustomMessages]
 english.CompleteInstallation=Connect to your CIOC database in a browser window to complete the installation.

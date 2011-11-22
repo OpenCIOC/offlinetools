@@ -104,7 +104,10 @@ class CiocFormRenderer(FormRenderer):
     def url(self, name, value=None, id=None, **attrs):
         kw = {'type': 'text', 'maxlength': 150, 'class_': 'url'}
         kw.update(attrs) 
-        return literal(u'http://')+self.text(name, value, id, **kw)
+        value = self.value(name, value)
+        if value and value.startswith('http://'):
+            value = value[len('http://'):]
+        return literal(u'http://')+tags.text(name, value, id, **kw)
 
     def email(self, name, value=None, id=None, **attrs):
         kw = {'type': 'email', 'maxlength': 60, 'class_': 'email'}

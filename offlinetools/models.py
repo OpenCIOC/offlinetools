@@ -16,7 +16,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 from offlinetools import syslanguage
 
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension(), expire_on_commit=False))
 
 import logging
 log = logging.getLogger('offlinetools.models')

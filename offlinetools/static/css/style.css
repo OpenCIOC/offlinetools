@@ -199,7 +199,7 @@ td { vertical-align: top; }
    ========================================================================== */
 
 #pagetitle, #main {
-    margin: 0 1em;
+    margin: 1em;
 }
 
 body {
@@ -281,6 +281,14 @@ span.ui-icon.menu-icon {
     padding: .5em;
 }
 
+.ui-widget-header.field {
+    color: #2e6e9e;
+    background: #dfeffc;
+}
+
+.form-table td.ui-widget-content a {
+    color: #2e6e9e;
+}
 
 /* ==|== non-semantic helper classes ========================================
    Please define your styles before this section.

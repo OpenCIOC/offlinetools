@@ -12,7 +12,7 @@
 #   limitations under the License.
 
 
-import win32traceutil
+#import win32traceutil
 import win32serviceutil
 import win32service
 import win32event

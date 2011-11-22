@@ -715,13 +715,13 @@ var input_el = $("#" + id).
 			return false;
 		},
 		source: create_caching_source_fn($,url),
-		minLength: minLength}).
+		minLength: minLength})/*.
 	keypress(function (evt) {
 		if (evt.keyCode == '13') {
 			evt.preventDefault();
 			input_el.autocomplete('close');
 		}
-	});
+	})*/;
 
 }
 

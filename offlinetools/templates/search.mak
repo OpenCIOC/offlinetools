@@ -7,7 +7,7 @@ ${renderer.error_notice()}
 ${renderer.form_passvars()}
 	<table class="form-table">
 		<tr>
-			<td class="ui-widget-header">${renderer.label('Terms', _('Keyword Search'))}</td>
+			<td class="ui-widget-header">${renderer.label('Terms', _('Contains word/phrase'))}</td>
 			<td class="ui-widget-content">
 				${renderer.errorlist('Terms')}
 				${renderer.text('Terms', maxlength=255)}

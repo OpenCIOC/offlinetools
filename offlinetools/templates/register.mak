@@ -8,7 +8,7 @@
 ${renderer.error_notice()}
 <form action='${request.current_route_path(_form=True)}' method='post'>
 ${renderer.form_passvars()}
-<a href="${request.current_route_path(_ln='en-CA' if request.language.Culture=='fr-CA' else 'fr-CA')}">${_(u"S'enregistrer en français")}</a>
+<p><a href="${request.current_route_path(_ln='en-CA' if request.language.Culture=='fr-CA' else 'fr-CA')}">${_(u"S'enregistrer en français")}</a></p>
 <table class="form-table">
 <td colspan="2" class="ui-widget-header">${_('Basic Source Database Connection Information')}</td>
 <tr>
@@ -18,7 +18,7 @@ ${renderer.form_passvars()}
     <td class="ui-widget-content">
         ${renderer.errorlist('CiocSite')}
         ${renderer.url('CiocSite')}
-        <br><span class="SmallNote FieldNote">${_('The URL you use to log-in to CIOC.')}</span>
+        <br><span class="SmallNote FieldNote">${_('URL of your CIOC database; e.g. test.cioc.ca')}</span>
     </td>
 </tr>
 <tr>
