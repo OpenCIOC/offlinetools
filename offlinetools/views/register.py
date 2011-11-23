@@ -31,7 +31,7 @@ class Register(ViewBase):
 
     __skip_register_check__ = True
     
-    @view_config(route_name="register", request_method="POST", renderer='register.mak')
+    #@view_config(route_name="register", request_method="POST", renderer='register.mak')
     def post(self):
         request = self.request
         _ = request.translate
@@ -131,7 +131,7 @@ class Register(ViewBase):
         return HTTPFound(location=request.route_url('pull'))
 
 
-    @view_config(route_name="register", renderer="register.mak")
+    #@view_config(route_name="register", renderer="register.mak")
     def get(self):
         request = self.request
         _ = request.translate

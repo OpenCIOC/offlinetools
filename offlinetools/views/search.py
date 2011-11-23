@@ -13,19 +13,22 @@ import logging
 log = logging.getLogger('offlinetools.views.search')
 
 class SearchSchema(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+
     Terms = validators.UnicodeString(max=255)
     QuickList = validators.UnicodeString(max=50)
     Community = validators.UnicodeString(max=255)
 
 
 class Search(ViewBase):
-    @view_config(route_name='search', permission='view', renderer='search.mak')
+    #@view_config(route_name='search', permission='view', renderer='search.mak')
     def search(self):
         return self._get_form_values()
 
 
 
-    @view_config(route_name='results', permission='view', renderer='results.mak')
+    #@view_config(route_name='results', permission='view', renderer='results.mak')
     def results(self):
         request = self.request
 

@@ -12,3 +12,4 @@ backports.ssl_match_hostname
 PyCrypto
 webhelpers
 pyramid_simpleform
+pyramid_exclog

@@ -84,17 +84,45 @@ def main(global_config, **settings):
     config.add_static_view('static', 'offlinetools:static', cache_max_age=3600, permission=NO_PERMISSION_REQUIRED)
 
     config.add_route('search', '/', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.search.Search', route_name='search', attr='search',
+                    permission='view', renderer='search.mak')
+
     config.add_route('results', '/results', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.search.Search', route_name='results', attr='results',
+                    permission='view', renderer='results.mak')
 
     config.add_route('record', '/record/{num}', factory='offlinetools.views.record.RecordRootFactory', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.record.Record', route_name='record',
+                    permission='view', renderer='record.mak')
+
     config.add_route('comgen', '/comgen', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.comgen.ComGen', renderer='json', route_name='comgen')
 
     config.add_route('login', '/login', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.login.Login', renderer='login.mak', route_name='login',
+                    request_method='POST', attr='post', permission=NO_PERMISSION_REQUIRED)
+    config.add_view('offlinetools.views.login.Login', renderer='login.mak', route_name='login',
+                    attr='get', permission=NO_PERMISSION_REQUIRED)
+    config.add_view('offlinetools.views.login.Login', renderer='login.mak', 
+                    context='pyramid.httpexceptions.HTTPForbidden', 
+                    attr='get', permission=NO_PERMISSION_REQUIRED)
+
+
     config.add_route('logout', '/logout', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.login.logout', route_name='logout', permission=NO_PERMISSION_REQUIRED)
 
     config.add_route('register', '/register', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.register.Register', route_name='register', request_method='POST',
+                    attr='post', renderer='register.mak')
+    config.add_view('offlinetools.views.register.Register', route_name='register',
+                    attr='get', renderer='register.mak')
+
     config.add_route('pull', '/pull', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.pull.Pull', route_name='pull', renderer='pull.mak')
+
     config.add_route('pull_status', '/pullstatus', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.pull.Pull', route_name='pull_status', attr='status_poll',
+                    renderer='json')
 
     config.add_subscriber('offlinetools.subscribers.add_renderer_globals',
                       'pyramid.events.BeforeRender')

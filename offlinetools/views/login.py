@@ -21,7 +21,7 @@ class LoginSchema(Schema):
     came_from = validators.UnicodeString()
 
 class Login(ViewBase):
-    @view_config(route_name="login", request_method="POST", renderer='login.mak', permission=NO_PERMISSION_REQUIRED)
+    #@view_config(route_name="login", request_method="POST", renderer='login.mak', permission=NO_PERMISSION_REQUIRED)
     def post(self):
         request = self.request
         _ = request.translate
@@ -52,8 +52,8 @@ class Login(ViewBase):
         return HTTPFound(location=model_state.value('came_from', request.route_url('search', ln=start_ln[0])), 
                          headers=headers)
 
-    @view_config(route_name="login", renderer="login.mak", permission=NO_PERMISSION_REQUIRED)
-    @view_config(context='pyramid.httpexceptions.HTTPForbidden', renderer="login.mak", permission=NO_PERMISSION_REQUIRED)
+    #@view_config(route_name="login", renderer="login.mak", permission=NO_PERMISSION_REQUIRED)
+    #@view_config(context='pyramid.httpexceptions.HTTPForbidden', renderer="login.mak", permission=NO_PERMISSION_REQUIRED)
     def get(self):
         request = self.request
         login_url = request.route_url('login')
@@ -69,7 +69,7 @@ class Login(ViewBase):
 
 
 
-@view_config(route_name="logout", permission=NO_PERMISSION_REQUIRED)
+#@view_config(route_name="logout", permission=NO_PERMISSION_REQUIRED)
 def logout(request):
     headers = forget(request)
     return HTTPFound(location = request.route_url('login'),

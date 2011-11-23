@@ -36,7 +36,7 @@ class RecordRootFactory(object):
             log.debug('user: %s, %d', request.user.UserName, request.user.ViewType)
 
 
-@view_config(route_name='record', permission='view', renderer='record.mak')
+#@view_config(route_name='record', permission='view', renderer='record.mak')
 class Record(ViewBase):
     def __call__(self):
         request = self.request

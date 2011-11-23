@@ -97,7 +97,8 @@ requires = [
     'backports.ssl_match_hostname',
     'PyCrypto',
     'webhelpers',
-    'pyramid_simpleform'
+    'pyramid_simpleform',
+    'pyramid_exclog'
 
     ]
 
@@ -133,9 +134,9 @@ setup(name='OfflineTools',
                                         'Cookie', 'win32com.shell.shell', 'win32com.shell.shellcon'], 
                             'excludes': []}},
       service = [service_definition],
-      data_files = find_data_files('offlinetools', 'offlinetools') + #, ['*.pyc', '*.mak']) +
-                    #find_data_files(r'offlinetool\locale', 'offlinetools\locale', '*.mo')+
-                    #find_data_files(r'offlinetool\static', 'offlinetools\static')+
+      data_files = find_data_files('offlinetools', 'offlinetools', ['*.pyc', '*.mak']) +
+                    find_data_files(r'offlinetools\locale', 'offlinetools\locale', '*.mo')+
+                    find_data_files(r'offlinetools\static', 'offlinetools\static') +
                     find_data_files('OfflineTools.egg-info', 'OfflineTools.egg-info')+
                     find_data_files(r'c:\work\cioc\offlinetoolsenv\Lib\site-packages', 'site-packages')
                   + [('', ['production.ini', 'cacert.pem'])]

@@ -4,7 +4,7 @@ from pyramid.view import view_config
 from offlinetools.views.base import ViewBase
 from offlinetools.views.validators import UnicodeString, Invalid
 
-@view_config(route_name="comgen", renderer='json')
+#@view_config(route_name="comgen", renderer='json')
 class ComGen(ViewBase):
     def __call__(self):
         request = self.request

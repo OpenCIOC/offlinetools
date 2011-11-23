@@ -17,7 +17,7 @@ initial_pull_thread = None
 
 class Pull(ViewBase):
 
-    @view_config(route_name="pull", renderer="pull.mak")
+    #@view_config(route_name="pull", renderer="pull.mak")
     def __call__(self):
         global initial_pull,initial_pull_thread
         request = self.request
@@ -32,7 +32,7 @@ class Pull(ViewBase):
 
         return {}
 
-    @view_config(route_name="pull_status", renderer="json")
+    #@view_config(route_name="pull_status", renderer="json")
     def status_poll(self):
         global initial_pull,initial_pull_thread
 

@@ -102,6 +102,10 @@ dist/site-packages/pyramid_debugtoolbar-0.9.5-py2.7.egg/EGG-INFO/SOURCES.txt
 dist/site-packages/pyramid_debugtoolbar-0.9.5-py2.7.egg/EGG-INFO/dependency_links.txt
 dist/site-packages/pyramid_debugtoolbar-0.9.5-py2.7.egg/EGG-INFO/requires.txt
 dist/site-packages/pyramid_debugtoolbar-0.9.5-py2.7.egg/EGG-INFO/top_level.txt
+dist/site-packages/pyramid_exclog-0.5-py2.7.egg/EGG-INFO/SOURCES.txt
+dist/site-packages/pyramid_exclog-0.5-py2.7.egg/EGG-INFO/dependency_links.txt
+dist/site-packages/pyramid_exclog-0.5-py2.7.egg/EGG-INFO/requires.txt
+dist/site-packages/pyramid_exclog-0.5-py2.7.egg/EGG-INFO/top_level.txt
 dist/site-packages/pyramid_simpleform-0.6.1-py2.7.egg/EGG-INFO/SOURCES.txt
 dist/site-packages/pyramid_simpleform-0.6.1-py2.7.egg/EGG-INFO/dependency_links.txt
 dist/site-packages/pyramid_simpleform-0.6.1-py2.7.egg/EGG-INFO/requires.txt
@@ -196,6 +200,7 @@ offlinetools/__init__.py
 offlinetools/const.py
 offlinetools/httpsfix.py
 offlinetools/keymgmt.py
+offlinetools/logtools.py
 offlinetools/models.py
 offlinetools/modelstate.py
 offlinetools/request.py
