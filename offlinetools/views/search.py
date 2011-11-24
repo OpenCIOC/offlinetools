@@ -55,7 +55,7 @@ class Search(ViewBase):
         ViewType = request.user.ViewType
         session = request.dbsession
         
-        filters = [models.Record.views.any(models.View.ViewType==ViewType), 
+        filters = [#models.Record.views.any(models.View.ViewType==ViewType), 
                    models.Record.LangID==LangID]
 
         if model_state.value('Terms'):
@@ -107,24 +107,10 @@ class Search(ViewBase):
             filters.append(models.Record.publications.any(models.Publication.ListID==quick_list))
 
 
-        name_args = [aliased(models.Record_Data,session.query(models.Record_Data).
-                     join(models.Field, models.Field.FieldID==models.Record_Data.FieldID).
-                     filter(models.Record_Data.LangID==LangID).
-                     filter(models.Field.FieldName==('ORG_LEVEL_%d'% x)).
-                     subquery()) for x in range(1,6)]
+        stmt = (session.query(models.Record.NUM, models.Record.LOCATED_IN_Cache, models.Record.OrgName_Cache).
+                join(models.Record_Views, and_(models.Record_Views.c.NUM==models.Record.NUM, models.Record_Views.c.ViewType==ViewType)))
 
-        located_in = (aliased(models.Record_Data,session.query(models.Record_Data).
-                     join(models.Field, models.Field.FieldID==models.Record_Data.FieldID).
-                     filter(models.Record_Data.LangID==LangID).
-                     filter(models.Field.FieldName=='LOCATED_IN_CM').
-                     subquery()))
-
-        stmt = session.query(models.Record.NUM, located_in.Value, *[x.Value for x in name_args])
-        stmt = stmt.outerjoin(located_in, models.Record.NUM==located_in.NUM)
-        for substmt in name_args:
-            stmt = stmt.outerjoin(substmt, models.Record.NUM==substmt.NUM)
-
-        results = stmt.filter(and_(*filters)).order_by(*([collate(x.Value, 'NOCASE') for x in name_args] + [models.Record.NUM])).all()
+        results = stmt.filter(and_(*filters)).order_by(collate(models.Record.OrgName_Cache, 'NOCASE'),models.Record.NUM).all()
 
         log.debug('Return')
 

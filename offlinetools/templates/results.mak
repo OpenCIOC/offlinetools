@@ -14,8 +14,8 @@ ${self.printInfoMessage(_('Found %d results matching that criteria') % len(resul
 %for result in results:
 <tr>
     <td class="ui-widget-content">${result[0]}</td>
-    <td class="ui-widget-content"><a href="${request.route_path('record', num=result[0])}">${', '.join(x for x in result[-5:] if x is not None) or _('(unknown)')|n}</a></td>
-    <td class="ui-widget-content">${result[1] or ''}</td>
+    <td class="ui-widget-content"><a href="${request.route_path('record', num=result[0])}">${result.OrgName_Cache or _('(unknown)')|n}</a></td>
+    <td class="ui-widget-content">${result.LOCATED_IN_Cache or ''}</td>
 </tr>
 %endfor
 </table>

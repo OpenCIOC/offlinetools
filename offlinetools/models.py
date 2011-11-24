@@ -2,6 +2,7 @@ import transaction
 
 import sqlalchemy
 from sqlalchemy import Column, Integer, Unicode, DateTime, Boolean, ForeignKey, Table
+from sqlalchemy.schema import Index
 
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
@@ -132,8 +133,12 @@ Record_Community = Table('Record_Community', Base.metadata,
 
     
 class Record(LangMixIn,Base):
+    __table_args__ = (Index('ix_Record_OrgName_Cache_NUM', 'OrgName_Cache', 'NUM'),)
     NUM = Column(Unicode(8), primary_key=True, index=True)
     LOCATED_IN_CM = Column(Integer, index=True)
+
+    OrgName_Cache = Column(Unicode(1000))
+    LOCATED_IN_Cache = Column(Unicode(255))
 
     views = relationship('View', secondary=Record_Views, backref='records')
     publications = relationship('Publication', secondary=Record_Publication, backref='records')
@@ -150,7 +155,6 @@ class Record_Data(Base):
 
     record = relationship('Record', primaryjoin=and_(NUM==Record.NUM, LangID==Record.LangID), backref='fields')
     field = relationship('Field', primaryjoin=FieldID==Field.FieldID)
-
 
 
 

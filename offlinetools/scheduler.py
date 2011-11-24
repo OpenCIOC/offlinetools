@@ -7,6 +7,7 @@ import gc
 import requests
 
 from sqlalchemy import and_
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import bindparam, select, delete, update, insert
 import transaction
 
@@ -144,9 +145,14 @@ class PullObject(object):
 
         data = None
 
+        log.debug('gc collect')
+
         gc.collect()
 
-        if cfg.last_update and (self._new_fields or self._new_records):
+        log.debug('after gc collect')
+
+        if (cfg.last_update and not self.force) and (self._new_fields or self._new_records):
+            log.debug('********** Second Update')
             try:
                 del auth_data['FromDate']
             except KeyError:
@@ -158,11 +164,11 @@ class PullObject(object):
             try:
                 r.raise_for_status()
             except Exception, e:
-                self.completion_code = 'Request failed: %s' % e
+                self.completion_code = '*************************************** Request failed: %s' % e
                 return 
 
 
-            log.debug('Response Size: %d', len(r.content))
+            log.debug('***************************************************** Response Size: %d', len(r.content))
             with tempfile.TemporaryFile() as fd:
                 fd.write(r.content)
                 fd.seek(0)
@@ -186,7 +192,9 @@ class PullObject(object):
 
             data = None
 
+            log.debug('gc collect')
             gc.collect()
+            log.debug('after gc collect')
         
         self.completion_code = 'ok'
         cfg.last_update = datetime.now()
@@ -196,7 +204,9 @@ class PullObject(object):
 
         dbsession.flush()
 
+        log.debug('********************************************* before commit')
         transaction.commit()
+        log.debug('********************************************* after commit')
         return 
 
 
@@ -234,12 +244,17 @@ class PullObject(object):
         self.status = min(((100 * (2+i))/total_tasks, 100))
 
         if not expect_second_update or not self._new_fields or not self._new_records:
+            log.debug('Before UPdate Caches')
             self._update_caches()
+            log.debug('After Update Caches')
+
         
 
     def _update2(self, data):
         self._update_record_data(data)
+        log.debug('Before UPdate Caches')
         self._update_caches()
+        log.debug('After Update Caches')
                 
 
     def _insert_views(self, data):
@@ -441,7 +456,32 @@ class PullObject(object):
 
 
         cols = ['LangID', 'Value']
-        session.execute(models.KeywordCache.__table__.insert(), [dict(zip(cols, x)) for x in vals])
+        if vals:
+            session.execute(models.KeywordCache.__table__.insert(), [dict(zip(cols, x)) for x in vals if x[-1]])
+
+        name_args = [aliased(models.Record_Data,session.query(models.Record_Data).
+                     join(models.Field, models.Field.FieldID==models.Record_Data.FieldID).
+                     filter(models.Field.FieldName==('ORG_LEVEL_%d'% x)).
+                     subquery()) for x in range(1,6)]
+
+        located_in = (aliased(models.Record_Data,session.query(models.Record_Data).
+                     join(models.Field, models.Field.FieldID==models.Record_Data.FieldID).
+                     filter(models.Field.FieldName=='LOCATED_IN_CM').
+                     subquery()))
+
+        stmt = session.query(models.Record.NUM, models.Record.LangID, located_in.Value, *[x.Value for x in name_args])
+        stmt = stmt.outerjoin(located_in, and_(models.Record.NUM==located_in.NUM, models.Record.LangID==located_in.LangID))
+        for substmt in name_args:
+            stmt = stmt.outerjoin(substmt, and_(models.Record.NUM==substmt.NUM, models.Record.LangID==substmt.LangID))
+
+
+        cols = ['b_NUM', 'b_LangID', 'b_LOCATED_IN_Cache', 'b_OrgName_Cache']
+        cache_data = stmt.all()
+        cache_data = ((x.NUM, x.LangID, x[2], ', '.join(y for y in x[-5:] if y) or None) for x in cache_data)
+
+        u = update(models.Record.__table__).where(and_(models.Record.NUM==bindparam('b_NUM'), models.Record.LangID==bindparam('b_LangID'))).values({'LOCATED_IN_Cache': bindparam('b_LOCATED_IN_Cache'), 'OrgName_Cache': bindparam('b_OrgName_Cache')})
+
+        session.execute(u, [dict(zip(cols, x)) for x in cache_data])
 
 
         sql = '''
