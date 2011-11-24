@@ -290,6 +290,10 @@ span.ui-icon.menu-icon {
     color: #2e6e9e;
 }
 
+.extra-space {
+    margin-left: 1em;
+}
+
 /* ==|== non-semantic helper classes ========================================
    Please define your styles before this section.
    ========================================================================== */

@@ -1,13 +1,14 @@
-from pyramid.view import view_config
+import re 
 
 from formencode import Schema
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import case, collate
 
 from offlinetools import models
 from offlinetools.views.base import ViewBase
 from offlinetools.views import validators
+
 
 import logging
 log = logging.getLogger('offlinetools.views.search')
@@ -19,8 +20,16 @@ class SearchSchema(Schema):
     Terms = validators.UnicodeString(max=255)
     QuickList = validators.UnicodeString(max=50)
     Community = validators.UnicodeString(max=255)
+    LocatedIn = validators.StringBool()
 
+def process_search_text_value(val):
+    val = val.replace('\\', '\\\\') 
+    val = val.replace('%', '\\%')
+    val = val.replace('_', '\\_')
 
+    return val
+
+_terms_re = re.compile(r'''( |\".*?\"|'.*?')''')
 class Search(ViewBase):
     #@view_config(route_name='search', permission='view', renderer='search.mak')
     def search(self):
@@ -50,7 +59,10 @@ class Search(ViewBase):
                    models.Record.LangID==LangID]
 
         if model_state.value('Terms'):
-            filters.append(models.Record.fields.any(models.Record_Data.Value.like('%%%s%%' % model_state.value('Terms'))))
+            strip_chars = ' \t\r\n\'"'
+            terms = (process_search_text_value(p.strip(strip_chars)) for p in _terms_re.split(model_state.value('Terms')) if p.strip(strip_chars))
+            conditions = (models.Record.fields.any(models.Record_Data.Value.like('%{0}%'.format(p), escape='\\')) for p in terms)
+            filters.extend(conditions)
 
         community = model_state.value('Community')
         if community:
@@ -85,7 +97,10 @@ class Search(ViewBase):
 
                 log.debug('Communities: %s', session.query(models.Community.CM_ID, models.Community.ParentCommunity, models.Community_Name.Name).join(models.Community_Name).filter(models.Community_Name.LangID==0).filter(models.Community.CM_ID.in_(CM_IDS)).all())
 
-                filters.append(models.Record.communities.any(models.Community.CM_ID.in_(CM_IDS)))
+                if model_state.value('LocatedIn'):
+                    filters.append(or_(models.Record.LOCATED_IN_CM==None, models.Record.LOCATED_IN_CM.in_(CM_IDS)))
+                else:
+                    filters.append(models.Record.communities.any(models.Community.CM_ID.in_(CM_IDS)))
 
         quick_list = model_state.value('QuickList')
         if quick_list:

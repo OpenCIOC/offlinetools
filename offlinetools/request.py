@@ -1,11 +1,88 @@
+from collections import defaultdict
+from datetime import date, datetime, time
+
 from pyramid.request import Request
 from pyramid.decorator import reify
 from pyramid.i18n import get_localizer, TranslationStringFactory
 from pyramid.security import unauthenticated_userid
 
+from babel import Locale, dates
+
 from offlinetools.models import DBSession, Users, get_config
 
 from offlinetools.syslanguage import SystemLanguage, default_culture, is_active_culture
+
+class LocaleDict(defaultdict):
+    def __missing__(self, key):
+        return Locale.parse(key, sep="-")
+
+_locales = LocaleDict()
+def get_locale(request):
+    return _locales[request.language.Culture]
+
+_locale_date_format = {
+        'en-CA': 'd MMM yyyy',
+        'fr-CA': 'd MMM yyyy',
+        'de': 'dd.MM.yyyy',
+        'fr': 'd MMM yyyy',
+        'es-MX': 'MM/dd/yyyy',
+        'it': 'd MMM yyyy',
+        'nl': 'd MMM yyyy',
+        'no': 'd MMM yyyy',
+        'pt': 'd-MM-yyyy',
+        'sv': 'd MMM yyyy',
+        'hu': 'MMM d. yyyy',
+        'pl': 'd MMM yyyy',
+        'ro': 'd MMM yyyy',
+        'hr': 'd MMM yyyy',
+        'sk': 'dd.MM.yyyy',
+        'sl': 'd MMM yyyy',
+        'el': 'dd/MM/yyyy',
+        'bg': 'd MMM yyyy',
+        'ru': 'd MMM yyyy',
+        'tr': 'd MMM yyyy',
+        'lv': 'd MMM yyyy',
+        'lt': 'd MMM yyyy',
+        'zh-TW': 'yyyy/MM/dd',
+        'ko': 'yyyy/MM/dd',
+        'zh-CN': 'yyyy/MM/dd',
+        'th': 'd MMM yyyy'
+        }
+
+def format_date(d, request):
+    if d is None:
+        return ''
+    if not isinstance(d, (date, datetime)):
+        return d
+
+    l = get_locale(request)
+    format = _locale_date_format.get(request.language.Culture, 'medium')
+    return dates.format_date(d, locale=l, format=format)
+
+def format_time(t, request):
+    if t is None:
+        return ''
+    if not isinstance(t, (datetime, time)):
+        return t
+
+    l = get_locale(request)
+    return dates.format_time(t, locale=l)
+
+def format_datetime(dt, request):
+    if dt is None:
+        return ''
+    if not isinstance(dt, (date, datetime, time)):
+        return dt
+
+    parts = []
+
+    if isinstance(dt, (date, datetime)):
+        parts.append(format_date(dt, request))
+
+    if isinstance(dt, (datetime, time)):
+        parts.append(format_time(dt, request))
+
+    return ' '.join(parts)
 
 class OfflineToolsRequest(Request):
     def form_args(self, ln=None):
@@ -55,6 +132,15 @@ class OfflineToolsRequest(Request):
             return localizer.translate(tsf(string))
 
         return auto_translate
+
+    def format_date(self, d):
+        return format_date(d, self)
+
+    def format_time(self, t):
+        return format_time(t, self)
+
+    def format_datetime(self, dt):
+        return format_datetime(dt, self)
 
     @reify
     def user(self):

@@ -21,6 +21,10 @@ dist/OfflineTools.egg-info/entry_points.txt
 dist/OfflineTools.egg-info/paster_plugins.txt
 dist/OfflineTools.egg-info/requires.txt
 dist/OfflineTools.egg-info/top_level.txt
+dist/site-packages/Babel-0.9.6-py2.7.egg/EGG-INFO/SOURCES.txt
+dist/site-packages/Babel-0.9.6-py2.7.egg/EGG-INFO/dependency_links.txt
+dist/site-packages/Babel-0.9.6-py2.7.egg/EGG-INFO/entry_points.txt
+dist/site-packages/Babel-0.9.6-py2.7.egg/EGG-INFO/top_level.txt
 dist/site-packages/Pygments-1.4-py2.7.egg/EGG-INFO/SOURCES.txt
 dist/site-packages/Pygments-1.4-py2.7.egg/EGG-INFO/dependency_links.txt
 dist/site-packages/Pygments-1.4-py2.7.egg/EGG-INFO/entry_points.txt
@@ -250,6 +254,7 @@ offlinetools/templates/record.mak
 offlinetools/templates/register.mak
 offlinetools/templates/results.mak
 offlinetools/templates/search.mak
+offlinetools/templates/status.mak
 offlinetools/views/__init__.py
 offlinetools/views/base.py
 offlinetools/views/comgen.py
@@ -258,4 +263,5 @@ offlinetools/views/pull.py
 offlinetools/views/record.py
 offlinetools/views/register.py
 offlinetools/views/search.py
+offlinetools/views/status.py
 offlinetools/views/validators.py

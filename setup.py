@@ -98,7 +98,8 @@ requires = [
     'PyCrypto',
     'webhelpers',
     'pyramid_simpleform',
-    'pyramid_exclog'
+    'pyramid_exclog',
+    'Babel'
 
     ]
 
@@ -129,10 +130,14 @@ setup(name='OfflineTools',
       main = offlinetools:main
       """,
       paster_plugins=['pyramid'],
-      options = {'py2exe': {'includes': ['dumbdbm', 'anydbm', 'sqlite3', 'new', 'HTMLParser', 'Queue',
+      options = {'py2exe': {'compressed': 1, 'bundle_files': 2, 'includes': ['dumbdbm', 'anydbm', 'sqlite3', 'new', 'HTMLParser', 'Queue',
                                          'BaseHTTPServer', 'urllib2', 'cgi', 'io', 'shutil', 'decimal',
                                         'Cookie', 'win32com.shell.shell', 'win32com.shell.shellcon'], 
-                            'excludes': []}},
+                            'excludes': [],
+                            'dll_excludes': ['POWRPROF.dll',
+                                             'API-MS-Win-Core-LocalRegistry-L1-1-0.dll',
+                                             'API-MS-Win-Core-ProcessThreads-L1-1-0.dll',
+                                             'API-MS-Win-Security-Base-L1-1-0.dll']}},
       service = [service_definition],
       data_files = find_data_files('offlinetools', 'offlinetools', ['*.pyc', '*.mak']) +
                     find_data_files(r'offlinetools\locale', 'offlinetools\locale', '*.mo')+

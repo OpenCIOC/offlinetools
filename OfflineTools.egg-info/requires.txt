@@ -13,3 +13,4 @@ PyCrypto
 webhelpers
 pyramid_simpleform
 pyramid_exclog
+Babel

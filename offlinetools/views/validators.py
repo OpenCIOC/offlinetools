@@ -52,5 +52,6 @@ FieldsMatch = validators.FieldsMatch
 MaxLength = validators.MaxLength
 Int = validators.Int
 Bool = validators.Bool
+StringBool = validators.StringBool
 Invalid = validators.Invalid
 URL = validators.URL

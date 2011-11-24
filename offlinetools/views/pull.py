@@ -1,8 +1,5 @@
 from threading import Thread
 
-from pyramid.view import view_config
-
-
 from offlinetools import models
 from offlinetools.views.base import ViewBase
 
@@ -26,7 +23,7 @@ class Pull(ViewBase):
         if not cfg.machine_name or not cfg.update_url:
             return 'Not properly configured'
 
-        initial_pull = scheduler.PullObject()
+        initial_pull = scheduler.PullObject(force=request.params.get('force'))
         initial_pull_thread = Thread(target=initial_pull.run)
         initial_pull_thread.start()
 

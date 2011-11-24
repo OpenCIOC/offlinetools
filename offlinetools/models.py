@@ -133,9 +133,12 @@ Record_Community = Table('Record_Community', Base.metadata,
     
 class Record(LangMixIn,Base):
     NUM = Column(Unicode(8), primary_key=True, index=True)
+    LOCATED_IN_CM = Column(Integer, index=True)
+
     views = relationship('View', secondary=Record_Views, backref='records')
     publications = relationship('Publication', secondary=Record_Publication, backref='records')
     communities = relationship('Community', secondary=Record_Community, backref='records')
+
 
 
 class Record_Data(Base):
@@ -159,6 +162,9 @@ class Users(LangMixIn, Base):
     PasswordHashRepeat = Column(Integer)
     ViewType = Column(Integer, ForeignKey(View.ViewType, onupdate='CASCADE', ondelete='CASCADE'), index=True)
 
+
+class KeywordCache(LangMixIn, Base):
+    Value = Column(Unicode(500), primary_key=True)
 
 class ConfigData(Base):
     id = Column(Integer, primary_key=True)

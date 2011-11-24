@@ -1,7 +1,6 @@
 import os
 
 from pyramid.config import Configurator
-from pyramid.httpexceptions import HTTPFound
 from sqlalchemy import engine_from_config
 from pyramid_beaker import session_factory_from_settings
 
@@ -11,9 +10,11 @@ from pyramid.security import NO_PERMISSION_REQUIRED, Authenticated, Deny, Allow,
 
 from win32com.shell import shell, shellcon
 
-from offlinetools.models import initialize_sql
-from offlinetools.request import passvars_pregen
+from apscheduler.scheduler import Scheduler
 
+from offlinetools.models import initialize_sql, get_config
+from offlinetools.request import passvars_pregen
+from offlinetools.scheduler import scheduled_pull, key_to_schedule
 
 
 import requests
@@ -43,9 +44,12 @@ class RootFactory(object):
 def found_view(request):
     return request.context
 
+sched = None
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
+
+    global sched
 
     requests.defaults.defaults['base_headers']['User-Agent'] = 'CIOC Offline Tools/%s' % __version__
 
@@ -65,11 +69,18 @@ def main(global_config, **settings):
     engine = engine_from_config(sa_config, 'sqlalchemy.')
     initialize_sql(engine)
 
+    cfg = get_config()
+
+    sched = Scheduler()
+    sched.start()
+    sched.add_cron_job(scheduled_pull, **key_to_schedule(cfg.public_key))
+
     session_lock_dir = os.path.join(app_data_dir, 'session')
     try:
         os.makedirs(session_lock_dir)
     except os.error, e:
-        log.debug('os.error: %s', e)
+        pass
+
     settings['beaker.session.lock_dir'] = session_lock_dir
     session_factory = session_factory_from_settings(settings)
 
@@ -98,6 +109,9 @@ def main(global_config, **settings):
     config.add_route('comgen', '/comgen', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.comgen.ComGen', renderer='json', route_name='comgen')
 
+    config.add_route('keywordgen', '/keywordgen', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.comgen.KeywordGen', renderer='json', route_name='keywordgen')
+
     config.add_route('login', '/login', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.login.Login', renderer='login.mak', route_name='login',
                     request_method='POST', attr='post', permission=NO_PERMISSION_REQUIRED)
@@ -124,10 +138,12 @@ def main(global_config, **settings):
     config.add_view('offlinetools.views.pull.Pull', route_name='pull_status', attr='status_poll',
                     renderer='json')
 
+    config.add_route('status', '/status', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.status.Status', route_name='status', 
+                    renderer='status.mak', permission='view')
+
     config.add_subscriber('offlinetools.subscribers.add_renderer_globals',
                       'pyramid.events.BeforeRender')
-
-    #config.add_view(found_view, context=HTTPFound)
 
     config.scan()
     return config.make_wsgi_app()

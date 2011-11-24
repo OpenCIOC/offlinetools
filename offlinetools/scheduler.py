@@ -18,7 +18,8 @@ import logging
 log = logging.getLogger('offlinetools.scheduler')
 
 def key_to_schedule(pubkey):
-    days = ['Tue', 'Wed', 'Thr', 'Fri', 'Sat']
+    _ = lambda x: x
+    days = [_('Tue'), _('Wed'), _('Thr'), _('Fri'), _('Sat')]
     hours = [datetime(2010, 1, 1,0), datetime(2010, 1, 1, 6)]
     time_delta = hours[1] - hours[0]
     total_seconds_per_night = time_delta.total_seconds()
@@ -32,14 +33,19 @@ def key_to_schedule(pubkey):
     night_time = timedelta(0, night_slot * 30)
     night_time = (datetime(2010, 1, 1, 0) + night_time).time()
 
-    print {'day': days[int(day)], 'hour': night_time.hour, 'minute': night_time.minute, 'second': night_time.second}
+    return {'day_of_week': days[int(day)], 'hour': night_time.hour, 'minute': night_time.minute, 'second': night_time.second}
 
+
+def scheduled_pull():
+    pull = PullObject()
+    pull.run()
 
 class PullObject(object):
 
-    def __init__(self):
+    def __init__(self, force=False):
         self.status = 0
         self.completion_code = None
+        self.force = force
 
 
     def run(self):
@@ -47,6 +53,7 @@ class PullObject(object):
         try:
             self._run()
         except Exception, e:
+            log.exception('Caught Failure in pull:')
             self.completion_code = 'Unknown failure: %s' % e
 
         if self.completion_code != 'ok':
@@ -55,9 +62,13 @@ class PullObject(object):
             cfg = models.get_config(self.dbsession)
 
             if not cfg.update_log:
-                cfg.update_log = 'Initial Update Failed on ' + datetime.now().isoformat()
+                update_log = []
+                log_msg = '%s: Initial Update Failed: %s' % (datetime.now().isoformat(), self.completion_code)
             else:
-                cfg.update_log = cfg.update_log + '\nUpdate Failed: ' + datetime.now().isoformat()
+                update_log = [cfg.update_log]
+                log_msg = '%s: Update Failed: %s' % (datetime.now().isoformat(), self.completion_code)
+
+            cfg.update_log = '\n'.join([log_msg] + update_log)
 
             cfg.update_failure_count = (cfg.update_failure_count or 0) + 1
 
@@ -99,7 +110,7 @@ class PullObject(object):
         signature = get_signature(cfg.private_key, tosign)
 
         auth_data['ChallengeSig'] = json.dumps(signature)
-        if cfg.last_update:
+        if cfg.last_update and not self.force:
             auth_data['FromDate'] = cfg.last_update.isoformat()
         r = requests.post(posixpath.join(url_base, 'pull'), auth_data)
         try:
@@ -129,7 +140,7 @@ class PullObject(object):
             self.completion_code = 'failed: %s' % data['reason']
             return 
         
-        self._update(data['data'], not not cfg.last_update)
+        self._update(data['data'], (cfg.last_update and not self.force))
 
         data = None
 
@@ -179,7 +190,8 @@ class PullObject(object):
         
         self.completion_code = 'ok'
         cfg.last_update = datetime.now()
-        cfg.update_log = (cfg.update_log or '') + '\nPull Success: '+ datetime.now().isoformat() 
+        update_log = [cfg.update_log] if cfg.update_log else []
+        cfg.update_log = '\n'.join(['%s: Pull Success' % datetime.now().isoformat()] + update_log)
         cfg.update_failure_count = 0
 
         dbsession.flush()
@@ -188,7 +200,7 @@ class PullObject(object):
         return 
 
 
-    def _update(self, data, double_progress):
+    def _update(self, data, expect_second_update):
         #session = self.dbsession
         
         inserts = [self._insert_views, self._insert_communities, self._insert_publications,
@@ -211,18 +223,23 @@ class PullObject(object):
 
         total_tasks = len(tasks)
 
-        if double_progress:
+        if expect_second_update:
             total_tasks = total_tasks * 2
 
 
         for i,fn in enumerate(tasks):
             self.status = min(((100 * (1+i))/total_tasks, 100))
             fn(data)
-            
+
         self.status = min(((100 * (2+i))/total_tasks, 100))
+
+        if not expect_second_update or not self._new_fields or not self._new_records:
+            self._update_caches()
+        
 
     def _update2(self, data):
         self._update_record_data(data)
+        self._update_caches()
                 
 
     def _insert_views(self, data):
@@ -401,6 +418,52 @@ class PullObject(object):
         d = delete(models.Record.__table__).where(and_(models.Record.NUM==bindparam('NUM'),models.Record.LangID==bindparam('LangID')))
 
         session.execute(d, to_delete)
+
+    def _update_caches(self):
+
+        session = self.dbsession
+
+        d = delete(models.KeywordCache.__table__)
+        session.execute(d)
+
+        fields = [u'ORG_LEVEL_%d' % i for i in range(1,6)]
+        q = (session.query(models.Record_Data.LangID, models.Record_Data.Value).
+             join(models.Field, models.Record_Data.FieldID==models.Field.FieldID).
+             filter(models.Field.FieldName.in_(fields)))
+
+        vals = {(x.LangID, x.Value.strip()) for x in q}
+
+        q = (session.query(models.Record_Data.LangID, models.Record_Data.Value).
+             join(models.Field, models.Record_Data.FieldID==models.Field.FieldID).
+             filter(models.Field.FieldName==u'TAXONOMY'))
+
+        vals.update((x.LangID, y.strip()) for x in q for y in x.Value.split(';'))
+
+
+        cols = ['LangID', 'Value']
+        session.execute(models.KeywordCache.__table__.insert(), [dict(zip(cols, x)) for x in vals])
+
+
+        sql = '''
+        UPDATE Record SET LOCATED_IN_CM = 
+            (SELECT 
+                (SELECT CM_ID 
+                    FROM Community_Name 
+                    WHERE Community_Name.Name=Record_Data.Value 
+                    ORDER BY Community_Name.LangID 
+                    LIMIT 1
+                ) 
+            FROM Record_Data 
+            WHERE FieldID=(SELECT FieldID FROM Field WHERE FieldName='LOCATED_IN_CM') 
+                AND Record_Data.NUM=Record.NUM 
+                AND Record_Data.LangID=Record.LangID 
+            ORDER BY Record_Data.LangID
+            LIMIT 1
+            ) 
+            '''
+
+        session.execute(sql)
+
 
     def _update_record_data(self, data):
         session = self.dbsession

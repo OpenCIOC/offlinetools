@@ -25,6 +25,10 @@ ${renderer.form_passvars()}
 		<tr>
 			<td class="ui-widget-header">${renderer.label('Community', 'Community')}</td>
 			<td class="ui-widget-content">
+                ${renderer.errorlist('LocatedIn')}
+                ${renderer.radio('LocatedIn', True, True, label=_('Located In'))}
+                ${renderer.radio('LocatedIn', False, False, label=_('Areas Served'), class_='extra-space')}
+                <br>
 				${renderer.errorlist('Community')}
 				${renderer.text('Community', maxlength=255)}
 				</td>
@@ -49,6 +53,7 @@ ${renderer.form_passvars()}
 		init_cached_state('#SearchForm');
 
 		init_community_autocomplete($, 'Community', "${request.route_url('comgen')}", 3);
+		init_community_autocomplete($, 'Terms', "${request.route_url('keywordgen')}", 3);
 
 		restore_cached_state();
 		});
