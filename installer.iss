@@ -29,6 +29,7 @@ Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsub
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 Source: dist\python27.dll; DestDir: {app}; Flags: restartreplace uninsrestartdelete; 
 Source: dist\wsgisvc.exe; DestDir: {app}; Flags: restartreplace uninsrestartdelete; 
+Source: C:\work\cioc\OfflineTools\vcredist_x86.exe; Flags: deleteafterinstall dontcopy; 
 
 [Icons]
 Name: "{group}\CIOC Offline Tools"; Filename: http://localhost:8765/; Languages: english; 
@@ -36,10 +37,12 @@ Name: "{group}\Outils déconnecté"; Filename: http://localhost:8765/?Ln=fr-CA; La
 
 
 [Run]
+Check: DoesNotHaveVC2008Runtime; Filename: {tmp}\vcredist_x86.exe; Parameters: /q; WorkingDir: {tmp}; BeforeInstall: ExtractVCRedist; 
 Filename: {app}\wsgisvc.exe; Parameters: "--startup auto install"; WorkingDir: {app}; Flags: RunHidden; 
 Filename: {app}\wsgisvc.exe; Parameters: "--wait 10 start"; WorkingDir: {app}; Flags: RunHidden; 
 Languages: english; Filename: http://localhost:8765/register; Flags: PostInstall ShellExec; Description: {cm:CompleteInstallation}; 
 Filename: http://localhost:8765/register?Ln=fr-CA; Flags: PostInstall ShellExec; Languages: french; Description: {cm:CompleteInstallation}; 
+Check: DoesNotHaveVC2008Runtime; Filename: {app}\wsgisvc.exe; 
 
 [UninstallRun]
 Filename: {app}\wsgisvc.exe; Parameters: "--wait stop"; WorkingDir: {app}; Flags: RunHidden; 
@@ -668,5 +671,26 @@ begin
   Result := '';
   if ServiceExists('CIOCOfflineTools') then
     SimpleStopService('CIOCOfflineTools', true, false);
+end;
+
+function MsiQueryProductState(ProductCode: string): integer;
+  external 'MsiQueryProductStateA@msi.dll stdcall';
+function MsiConfigureProduct(ProductCode: string;
+  iInstallLevel: integer; eInstallState: integer): integer;
+  external 'MsiConfigureProductA@msi.dll stdcall';
+const
+  INSTALLSTATE_DEFAULT = 5;
+  INSTALLLEVEL_MAXIMUM = $ffff;
+  INSTALLSTATE_ABSENT = 2;
+  
+  
+function DoesNotHaveVC2008Runtime(): Boolean;
+begin
+  Result := MsiQueryProductState('{FF66E9F6-83E7-3A3E-AF14-8DE9A809A6A4}') <> INSTALLSTATE_DEFAULT 
+end;
+  
+procedure ExtractVCRedist();
+begin
+  ExtractTemporaryFile('vcredist_x86.exe');
 end;
 
