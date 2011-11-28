@@ -38,6 +38,23 @@ ${renderer.form_passvars()}
 	<input type="submit" value="Submit"> <input type="reset" value="Clear">
 </form>
 
+<table class="form-table status-summary">
+<tr>
+	<td class="ui-widget-header">${_('Last Updated')}</td>
+	<td class="ui-widget-content">${request.format_datetime(config.last_update)}</td>
+</tr>
+<tr>
+	<td class="ui-widget-header">${_('Update Schedule')}</td>
+	<td class="ui-widget-content">${schedule}</td>
+</tr>
+%if config.update_failure_count:
+<tr>
+	<td class="ui-widget-header">${_('Update Failure Count')}</td>
+	<td class="ui-widget-content">${config.update_failure_count} <a href="${request.route_path('status')}">${_('Check Full Status')}</a></td>
+</tr>
+%endif
+</table>
+
 
 <%block name="bottomscripts">
 

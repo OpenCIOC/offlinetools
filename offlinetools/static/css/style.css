@@ -294,6 +294,10 @@ span.ui-icon.menu-icon {
     margin-left: 1em;
 }
 
+.status-summary {
+    margin-top: 5em;
+}
+
 /* ==|== non-semantic helper classes ========================================
    Please define your styles before this section.
    ========================================================================== */

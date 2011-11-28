@@ -99,7 +99,7 @@ requires = [
     'webhelpers',
     'pyramid_simpleform',
     'pyramid_exclog',
-    'Babel'
+    'Babel',
 
     ]
 
@@ -130,9 +130,10 @@ setup(name='OfflineTools',
       main = offlinetools:main
       """,
       paster_plugins=['pyramid'],
-      options = {'py2exe': {'compressed': 1, 'bundle_files': 2, 'includes': ['dumbdbm', 'anydbm', 'sqlite3', 'new', 'HTMLParser', 'Queue',
-                                         'BaseHTTPServer', 'urllib2', 'cgi', 'io', 'shutil', 'decimal',
-                                        'Cookie', 'win32com.shell.shell', 'win32com.shell.shellcon'], 
+      options = {'py2exe': {'compressed': 1, 'bundle_files': 2, 'includes': ['dumbdbm', 'anydbm', 'sqlite3', 
+                                       'new', 'HTMLParser', 'Queue', 'BaseHTTPServer', 'urllib2', 'cgi', 'io', 
+                                       'shutil', 'decimal', 'Cookie', 'win32com.shell.shell', 'win32com.shell.shellcon',
+                                       'xml.etree.cElementTree', 'collections' ], 
                             'excludes': [],
                             'dll_excludes': ['POWRPROF.dll',
                                              'API-MS-Win-Core-LocalRegistry-L1-1-0.dll',

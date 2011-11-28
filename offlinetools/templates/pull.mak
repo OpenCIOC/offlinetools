@@ -11,7 +11,7 @@ ${self.printInfoMessage(_('Now loading data from your CIOC site. This might take
  var prog_bar = null, update_progress_result = function(data, textStatus, jqXHR) {
     if (!data.status) {
         prog_bar.progressbar('value', data.percent)
-        setTimeout(update_progress, 1500);
+        setTimeout(update_progress, 2500);
     }else if (data.status === 'invalid') {
         //no request pending
     } else if (data.status === 'done') {

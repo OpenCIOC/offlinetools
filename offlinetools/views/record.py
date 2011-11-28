@@ -16,8 +16,6 @@ log = logging.getLogger('offlinetools.views.record')
 class RecordRootFactory(object):
 
     def __init__(self, request):
-        self.request = request
-
         session = request.dbsession
         
         LangID = request.language.LangID

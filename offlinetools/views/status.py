@@ -1,5 +1,8 @@
 from datetime import time
 
+from sqlalchemy import func
+from pyramid.security import Authenticated, Deny, Allow, Everyone
+
 from offlinetools import models
 from offlinetools.views.base import ViewBase
 from offlinetools.scheduler import key_to_schedule
@@ -9,6 +12,18 @@ log = logging.getLogger('offlinetools.views.status')
 
 initial_pull = None
 initial_pull_thread = None
+
+class StatusRootFactory(object):
+    __acl__ = [(Allow, Authenticated, 'view'), (Deny, Everyone, 'view')]
+
+    def __init__(self,request):
+        session = request.dbsession
+        user_count = session.query(func.count(models.Users.UserName), func.count(models.Record.NUM)).one()
+
+        has_data = request.database_has_data = any(user_count)
+        if not has_data:
+            self.__acl__ = [(Allow, Everyone, 'view')]
+            
 
 class Status(ViewBase):
 

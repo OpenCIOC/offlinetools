@@ -1,7 +1,8 @@
 import os
 
 from pyramid.config import Configurator
-from sqlalchemy import engine_from_config
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 from pyramid_beaker import session_factory_from_settings
 
 from pyramid.authentication import SessionAuthenticationPolicy
@@ -37,8 +38,12 @@ class RootFactory(object):
     __acl__ = [(Allow, Authenticated, 'view'), (Deny, Everyone, 'view')]
 
     def __init__(self, request):
-        if not request.config.machine_name:
-            self.__acl__ = [(Allow, Everyone, 'view')]
+        try:
+            if not request.config.machine_name:
+                self.__acl__ = [(Allow, Everyone, 'view')]
+        except OperationalError:
+            log.critical('request.url: %s', request.path_qs)
+            pass
 
 
 def found_view(request):
@@ -65,8 +70,7 @@ def main(global_config, **settings):
     except os.error, e:
         log.debug('os.error: %s', e)
 
-    sa_config = {'sqlalchemy.url': 'sqlite:///%s\\OfflineTools.db' % app_data_dir}
-    engine = engine_from_config(sa_config, 'sqlalchemy.')
+    engine = create_engine('sqlite:///%s\\OfflineTools.db' % app_data_dir, isolation_level= 'READ UNCOMMITTED')
     initialize_sql(engine)
 
     cfg = get_config()
@@ -134,11 +138,10 @@ def main(global_config, **settings):
     config.add_route('pull', '/pull', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.pull.Pull', route_name='pull', renderer='pull.mak')
 
-    config.add_route('pull_status', '/pullstatus', pregenerator=passvars_pregen)
-    config.add_view('offlinetools.views.pull.Pull', route_name='pull_status', attr='status_poll',
-                    renderer='json')
+    config.add_route('pull_status', '/pullstatus', pregenerator=passvars_pregen, factory='pyramid.traversal.DefaultRootFactory')
+    config.add_view('offlinetools.views.pull.PullStatus', route_name='pull_status', renderer='json')
 
-    config.add_route('status', '/status', pregenerator=passvars_pregen)
+    config.add_route('status', '/status', factory='offlinetools.views.status.StatusRootFactory', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.status.Status', route_name='status', 
                     renderer='status.mak', permission='view')
 

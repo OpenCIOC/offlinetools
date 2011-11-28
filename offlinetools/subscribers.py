@@ -6,7 +6,8 @@
 # software, please contact CIOC via their website above.
 #==================================================================
 
-import re
+import re, logging
+log = logging.getLogger('offlinetools.subscribers')
 
 from markupsafe import Markup, escape
 
@@ -17,6 +18,7 @@ br_markup = Markup('&nbsp;<br>')
 crlf_markup = Markup('\r\n')
 lf_markup = Markup('\n')
 cr_markup = Markup('\r')
+
 
 def textToHTML(text):
     if text:
@@ -33,6 +35,11 @@ def add_renderer_globals(event):
     request = event['request']
     if not request:
         return
+
+    log.debug('renderer_name: %s', event['renderer_name'])
+    if event['renderer_name'] == 'json' or event['renderer_name'].startswith('pyramid'):
+        return
+
     _ = event['_'] = request.translate
     event['localizer'] = request.localizer
     event['renderer'] = getattr(getattr(request,'model_state',None),'renderer', None)

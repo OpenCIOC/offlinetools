@@ -1,13 +1,14 @@
+from datetime import time
 import re 
 
 from formencode import Schema
 from sqlalchemy import and_, or_
-from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import case, collate
 
 from offlinetools import models
 from offlinetools.views.base import ViewBase
 from offlinetools.views import validators
+from offlinetools.scheduler import key_to_schedule
 
 
 import logging
@@ -135,7 +136,16 @@ class Search(ViewBase):
                     models.Publication_Name.LangID==LangID,
                     models.Publication.views.any(ViewType=ViewType))).\
                 order_by(models.Publication_Name.Name).all()
+
         
-        return {'quicklist': map(tuple, publications)}
+        cfg = request.config
+
+        schedule = key_to_schedule(cfg.public_key)
+
+        _ = request.translate
+        schedule = _(' @ ').join([_(schedule['day_of_week']), 
+                                  request.format_time(time(*[schedule[x] for x in ['hour', 'minute', 'second']]))])
+        
+        return {'quicklist': map(tuple, publications), 'config': cfg, 'schedule': schedule}
 
 

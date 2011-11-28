@@ -1,14 +1,15 @@
+from xml.etree import cElementTree as ET
 from datetime import datetime, timedelta
+from collections import defaultdict
 import posixpath, json, zipfile, tempfile
-from itertools import groupby, imap
-from operator import itemgetter, attrgetter
+from itertools import groupby, imap, islice
+from operator import itemgetter
 import gc
 
 import requests
 
 from sqlalchemy import and_
-from sqlalchemy.orm import aliased
-from sqlalchemy.sql.expression import bindparam, select, delete, update, insert
+from sqlalchemy.sql.expression import bindparam, select, delete, update 
 import transaction
 
 
@@ -20,7 +21,7 @@ log = logging.getLogger('offlinetools.scheduler')
 
 def key_to_schedule(pubkey):
     _ = lambda x: x
-    days = [_('Tue'), _('Wed'), _('Thr'), _('Fri'), _('Sat')]
+    days = [_('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat')]
     hours = [datetime(2010, 1, 1,0), datetime(2010, 1, 1, 6)]
     time_delta = hours[1] - hours[0]
     total_seconds_per_night = time_delta.total_seconds()
@@ -57,7 +58,7 @@ class PullObject(object):
             log.exception('Caught Failure in pull:')
             self.completion_code = 'Unknown failure: %s' % e
 
-        if self.completion_code != 'ok':
+        if self.completion_code is not None:
             # failure machinery
             transaction.abort()
             cfg = models.get_config(self.dbsession)
@@ -71,10 +72,43 @@ class PullObject(object):
 
             cfg.update_log = '\n'.join([log_msg] + update_log)
 
-            cfg.update_failure_count = (cfg.update_failure_count or 0) + 1
+            session = self.dbsession
 
+            failure_count = cfg.update_failure_count = (cfg.update_failure_count or 0) + 1
             self.dbsession.flush()
+
+            if failure_count > 3:
+                d = delete(models.KeywordCache.__table__)
+                session.execute(d)
+
+                d = delete(models.Users.__table__)
+                session.execute(d)
+
+                d = delete(models.Record.__table__)
+                session.execute(d)
+
+                d = delete(models.Record_Data.__table__)
+                session.execute(d)
+
+                d = delete(models.KeywordCache.__table__)
+                session.execute(d)
+
+
             transaction.commit()
+
+
+        session = self.dbsession
+        connection = session.connection()
+        connection.execute('vacuum')
+
+        transaction.commit()
+
+        log.critical('Done Sync')
+
+        if self.completion_code is None:
+            # completion code will be non-none on error
+            self.status = 100
+            self.completion_code = 'ok'
 
 
 
@@ -88,6 +122,8 @@ class PullObject(object):
 
 
         url_base = posixpath.join(cfg.update_url, 'offline')
+
+        self.status = 5
 
         # auth request
         auth_data = {'MachineName': cfg.machine_name}
@@ -137,11 +173,12 @@ class PullObject(object):
 
 
 
-        if data['fail']:
-            self.completion_code = 'failed: %s' % data['reason']
-            return 
+                if data['fail']:
+                    self.completion_code = 'failed: %s' % data['reason']
+                    return 
         
-        self._update(data['data'], (cfg.last_update and not self.force))
+                self.zipfile = zip
+                self._update(data['data'], (cfg.last_update and not self.force))
 
         data = None
 
@@ -184,11 +221,12 @@ class PullObject(object):
 
 
 
-            if data['fail']:
-                self.completion_code = 'failed: %s' % data['reason']
-                return 
-            
-            self._update2(data['data'])
+                    if data['fail']:
+                        self.completion_code = 'failed: %s' % data['reason']
+                        return 
+                    
+                    self.zipfile = zip
+                    self._update2(data['data'])
 
             data = None
 
@@ -196,13 +234,22 @@ class PullObject(object):
             gc.collect()
             log.debug('after gc collect')
         
-        self.completion_code = 'ok'
+        dbsession.flush()
+
+        self.status = 90
+
         cfg.last_update = datetime.now()
         update_log = [cfg.update_log] if cfg.update_log else []
         cfg.update_log = '\n'.join(['%s: Pull Success' % datetime.now().isoformat()] + update_log)
         cfg.update_failure_count = 0
 
         dbsession.flush()
+
+        log.debug('Before UPdate Caches')
+        self._update_caches()
+        log.debug('After Update Caches')
+
+        self.status = 95
 
         log.debug('********************************************* before commit')
         transaction.commit()
@@ -212,6 +259,8 @@ class PullObject(object):
 
     def _update(self, data, expect_second_update):
         #session = self.dbsession
+
+        self._expect_second_update = expect_second_update
         
         inserts = [self._insert_views, self._insert_communities, self._insert_publications,
                    self._insert_publication_views, self._insert_field_groups, 
@@ -226,7 +275,8 @@ class PullObject(object):
         deletes = [self._delete_views, self._delete_communities, self._delete_publications, 
                    self._delete_publication_views, self._delete_field_groups, 
                    self._delete_fields, self._delete_fieldgroup_fields,
-                   self._delete_users, self._delete_records, self._delete_record_views,
+                   self._delete_users, #self._delete_records,
+                   #self._delete_record_views,
                    self._delete_records_communities, self._delete_records_publications]
 
         tasks = inserts + updates + deletes
@@ -234,28 +284,18 @@ class PullObject(object):
         total_tasks = len(tasks)
 
         if expect_second_update:
-            total_tasks = total_tasks * 2
+            total_tasks = total_tasks + 2
 
 
         for i,fn in enumerate(tasks):
-            self.status = min(((100 * (1+i))/total_tasks, 100))
+            self.status = 10 + min(((80 * (i))/total_tasks, 80))
             fn(data)
 
-        self.status = min(((100 * (2+i))/total_tasks, 100))
+        self.status = 10 + min(((80 * (1+i))/total_tasks, 80))
 
-        if not expect_second_update or not self._new_fields or not self._new_records:
-            log.debug('Before UPdate Caches')
-            self._update_caches()
-            log.debug('After Update Caches')
-
-        
 
     def _update2(self, data):
         self._update_record_data(data)
-        log.debug('Before UPdate Caches')
-        self._update_caches()
-        log.debug('After Update Caches')
-                
 
     def _insert_views(self, data):
         self._insert_named_records(data['views'], models.View, models.View_Name, 'ViewType',
@@ -406,33 +446,44 @@ class PullObject(object):
         
 
     def _insert_records(self, data):
-        cols = ['NUM', 'LangID']
         session = self.dbsession
 
-        source = set(map(itemgetter(*cols), data['records_views']))
+        conn = session.connection()
+        sql = ''' CREATE TEMPORARY TABLE Record_updates (NUM UNICODE(8), LangID INTEGER, 
+                PRIMARY KEY (NUM, LangID) ON CONFLICT IGNORE);'''
+        conn.execute(sql)
 
-        existing = set(map(tuple, session.execute(select([models.Record.NUM, models.Record.LangID]))))
-
-        to_add = [dict(zip(cols, x)) for x in source-existing]
-        if to_add:
-            session.execute(insert(models.Record.__table__).values({models.Record.NUM:bindparam('NUM'),models.Record.LangID:bindparam('LangID')}), to_add)
-
-        self._new_records = source-existing
-
-        self._records_to_delete = existing-source
-
-    def _delete_records(self, data):
-        if not self._records_to_delete:
-            return
-
+        sql = ''' INSERT INTO Record_updates (NUM, LangID) VALUES (?,?) '''
         cols = ['NUM', 'LangID']
+        conn.execute(sql, map(itemgetter(*cols), data['records_views']))
 
-        session = self.dbsession
+        if self._expect_second_update:
+            self._new_records = session.execute('SELECT DISTINCT ru.NUM FROM Record_updates ru LEFT JOIN Record r ON ru.NUM=r.NUM WHERE r.NUM IS NULL').fetchall()
+            log.debug('new records: %s, %d', type(self._new_records), len(self._new_records))
+        else:
+            self._new_records = []
 
-        to_delete = [dict(zip(cols, x)) for x in self._records_to_delete]
-        d = delete(models.Record.__table__).where(and_(models.Record.NUM==bindparam('NUM'),models.Record.LangID==bindparam('LangID')))
+        sql = ''' 
+            INSERT INTO Record (NUM, LangID) 
+            SELECT ru.NUM, ru.LangID 
+            FROM Record_updates AS ru
+            LEFT JOIN Record AS r
+                ON ru.NUM=r.NUM AND ru.LangID=r.LangID
+            WHERE r.NUM IS NULL
+            '''
+        conn.execute(sql)
 
-        session.execute(d, to_delete)
+        sql = '''    DELETE FROM Record
+            WHERE NOT EXISTS(SELECT 1 FROM Record_updates WHERE Record.NUM=NUM AND Record.LangID=LangID)
+            '''
+        conn.execute(sql)
+
+        sql = '''
+            DROP TABLE Record_updates;
+            
+            '''
+        conn.execute(sql)
+
 
     def _update_caches(self):
 
@@ -459,29 +510,29 @@ class PullObject(object):
         if vals:
             session.execute(models.KeywordCache.__table__.insert(), [dict(zip(cols, x)) for x in vals if x[-1]])
 
-        name_args = [aliased(models.Record_Data,session.query(models.Record_Data).
-                     join(models.Field, models.Field.FieldID==models.Record_Data.FieldID).
-                     filter(models.Field.FieldName==('ORG_LEVEL_%d'% x)).
-                     subquery()) for x in range(1,6)]
+        field_names = ['LOCATED_IN_CM'] + ['ORG_LEVEL_%d' %i for i in range(1,6)]
+        fields = dict(session.query(models.Field.FieldName, models.Field.FieldID).filter(models.Field.FieldName.in_(field_names)).all())
 
-        located_in = (aliased(models.Record_Data,session.query(models.Record_Data).
-                     join(models.Field, models.Field.FieldID==models.Record_Data.FieldID).
-                     filter(models.Field.FieldName=='LOCATED_IN_CM').
-                     subquery()))
+        sql = '''
+            UPDATE Record SET
+           LOCATED_IN_Cache=
+            (SELECT Value FROM Record_Data WHERE Record.NUM=NUM AND Record.LangID=LangID AND FieldID=?),-- AS LOCATED_IN,
+               OrgName_Cache=
+                (SELECT group_concat(Value, ', ') FROM (SELECT Value FROM Record_Data AS rd INNER JOIN Field AS fd ON rd.FieldID=fd.FieldID WHERE Record.NUM=rd.NUM AND Record.LangID=LangID AND rd.FieldID in (?,?,?,?,?) ORDER BY fd.FieldName) AS iq) -- AS ORG_LEVELS
 
-        stmt = session.query(models.Record.NUM, models.Record.LangID, located_in.Value, *[x.Value for x in name_args])
-        stmt = stmt.outerjoin(located_in, and_(models.Record.NUM==located_in.NUM, models.Record.LangID==located_in.LangID))
-        for substmt in name_args:
-            stmt = stmt.outerjoin(substmt, and_(models.Record.NUM==substmt.NUM, models.Record.LangID==substmt.LangID))
+                --FROM Record
+               -- LIMIT 50
+        '''
+        a = """
+            SELECT
+            (SELECT Value FROM Record_Data WHERE Record.NUM=NUM AND Record.LangID=LangID AND FieldID=88) AS LOCATED_IN,
+                (SELECT group_concat(iq.Value, ', ') FROM (SELECT Value FROM Record_Data AS rd INNER JOIN Field AS fd ON rd.FieldID=fd.FieldID WHERE Record.NUM=rd.NUM AND Record.LangID=LangID AND rd.FieldID in (6,7,8,9,10) ORDER BY fd.FieldName) AS iq) AS ORG_LEVELS
 
+                FROM Record
+                LIMIT 50
+        """
 
-        cols = ['b_NUM', 'b_LangID', 'b_LOCATED_IN_Cache', 'b_OrgName_Cache']
-        cache_data = stmt.all()
-        cache_data = ((x.NUM, x.LangID, x[2], ', '.join(y for y in x[-5:] if y) or None) for x in cache_data)
-
-        u = update(models.Record.__table__).where(and_(models.Record.NUM==bindparam('b_NUM'), models.Record.LangID==bindparam('b_LangID'))).values({'LOCATED_IN_Cache': bindparam('b_LOCATED_IN_Cache'), 'OrgName_Cache': bindparam('b_OrgName_Cache')})
-
-        session.execute(u, [dict(zip(cols, x)) for x in cache_data])
+        session.connection().execute(sql, *[fields[x] for x in field_names])
 
 
         sql = '''
@@ -506,37 +557,40 @@ class PullObject(object):
 
 
     def _update_record_data(self, data):
+
         session = self.dbsession
 
+        conn = session.connection()
 
-        fn = itemgetter('NUM', 'LangID', 'FieldID')
-        id_map = {fn(x): x for x in data['record_data']}
+        count = conn.execute('SELECT COUNT(1) FROM Record_Data').first()
 
-        keyfn = attrgetter('NUM', 'LangID', 'FieldID')
-        for i,item in enumerate(session.query(models.Record_Data).yield_per(100)):
-            if i and i % 100 == 0:
-                session.flush()
+        cols = ['NUM', 'LangID', 'FieldID', 'FieldDisplay']
+        fn = itemgetter(*cols)
+        sql = ''' INSERT  %s INTO Record_Data (NUM, LangID, FieldID, Value) VALUES (?,?,?,?) ''' % ('OR REPLACE' if (count and count[0]) else '')
 
-            item_id = keyfn(item)
-            if item_id not in id_map:
-                #session.delete(item)
-                continue
+        def default_fn():
+            return None
 
-            item_to_update = id_map.pop(item_id)
-            item.Value = item_to_update['FieldDisplay']
-            if item.Value is None:
-                session.delete(item)
+        with self.zipfile.open('record_data.xml') as fd:
+            context = ET.iterparse(fd, events=('start',))
+            context = iter(context)
+
+            event, root = context.next()
+            while True:
+                rows = list(fn(defaultdict(default_fn, x.attrib)) for event,x in islice(context,5000) if x.tag =='row')
+                if not rows:
+                    break;
+
+                conn.execute(sql, rows)
+
+                del rows
+                root.clear()
 
 
-
-
-        for item_to_update in id_map.values():
-            if item_to_update['FieldDisplay'] is None:
-                continue
-
-            item_to_update['Value'] = item_to_update.pop('FieldDisplay')
-            item = models.Record_Data(**item_to_update)
-            session.add(item)
+        sql = '''    DELETE FROM Record_Data
+            WHERE Value IS NULL
+            '''
+        conn.execute(sql)
 
 
 

@@ -13,15 +13,20 @@ initial_pull = None
 initial_pull_thread = None
 
 class Pull(ViewBase):
-
     #@view_config(route_name="pull", renderer="pull.mak")
     def __call__(self):
         global initial_pull,initial_pull_thread
         request = self.request
         cfg = models.get_config(request)
 
+        _ = request.translate
+
         if not cfg.machine_name or not cfg.update_url:
-            return 'Not properly configured'
+            # XXX handled by other tools
+            return _('Not properly configured')
+
+        if initial_pull:
+            return _('Pull already in progress.')
 
         initial_pull = scheduler.PullObject(force=request.params.get('force'))
         initial_pull_thread = Thread(target=initial_pull.run)
@@ -30,7 +35,9 @@ class Pull(ViewBase):
         return {}
 
     #@view_config(route_name="pull_status", renderer="json")
-    def status_poll(self):
+class PullStatus(ViewBase):
+    __skip_register_check__ = True
+    def __call__(self):
         global initial_pull,initial_pull_thread
 
         if initial_pull:

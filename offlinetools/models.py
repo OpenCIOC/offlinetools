@@ -10,7 +10,7 @@ from sqlalchemy.sql import and_
 
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship, class_mapper, backref
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm.exc import NoResultFound
 
 from zope.sqlalchemy import ZopeTransactionExtension
@@ -158,7 +158,6 @@ class Record_Data(Base):
 
 
 
-
 class Users(LangMixIn, Base):
     UserName = Column(Unicode(50), primary_key=True, index=True)
     PasswordHash = Column(Unicode(33))
@@ -227,8 +226,11 @@ def initialize_languages(session):
     syslanguage.update_cultures(asdict(l) for l in languages)
         
 def on_connect_set_pragmas(dbapi_connection, connection_record):
-    dbapi_connection.execute('PRAGMA cache_size=20000')
-    dbapi_connection.execute('PRAGMA synchronous=1')
+    try:
+        dbapi_connection.execute('PRAGMA cache_size=20000')
+        dbapi_connection.execute('PRAGMA synchronous=1')
+    except Exception, e:
+        log.exception(e)
 
 
 def initialize_sql(engine):

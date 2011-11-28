@@ -1,5 +1,8 @@
 <%inherit file="master.mak"/>
 <%block name="title">${_('Status')}</%block>
+%if not request.database_has_data:
+<%block name="sitenav"/>
+%endif
 
 <%! from markupsafe import Markup, escape %>
 

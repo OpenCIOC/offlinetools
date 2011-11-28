@@ -185,6 +185,9 @@ class CiocFormRenderer(FormRenderer):
         if star_err:
             star_err = star_err[0]
         msg =  msg or star_err or 'There were validation errors'
+        return self.error_msg(msg)
+
+    def error_msg(self, msg):
         return Markup('''
             <div class="ui-widget error-notice clearfix">
                 <div class="ui-state-error ui-corner-all error-notice-wrapper"> 

@@ -1,9 +1,9 @@
 from pyramid.httpexceptions import HTTPFound
-from pyramid.view import view_config
-from pyramid.security import remember, forget, NO_PERMISSION_REQUIRED
+from pyramid.security import remember, forget
 
 from formencode import Schema
 from beaker.crypto.pbkdf2 import PBKDF2
+from sqlalchemy import func
 
 from offlinetools import models
 from offlinetools.views.base import ViewBase
@@ -30,19 +30,19 @@ class Login(ViewBase):
         model_state.schema = LoginSchema()
 
         if not model_state.validate():
-            return {}
+            return self._get_edit_info()
 
         LoginName = model_state.value('LoginName')
         user = request.dbsession.query(models.Users).filter_by(UserName=LoginName).first()
         if not user:
             model_state.add_error_for('*', _('Invalid User Name or Password'))
-            return {}
+            return self._get_edit_info()
 
 
         hash = Crypt(user.PasswordHashSalt, model_state.value('LoginPwd'), user.PasswordHashRepeat)
         if hash != user.PasswordHash:
             model_state.add_error_for('*', _('Invalid User Name or Password'))
-            return {}
+            return self._get_edit_info()
 
         headers = remember(request, user.UserName)
         start_ln = [x.Culture for x in _culture_list if x.LangID==user.LangID and x.Active]
@@ -64,8 +64,25 @@ class Login(ViewBase):
 
         request.model_state.data['came_from'] = came_from
 
-        return {}
+        return self._get_edit_info()
 
+    def _get_edit_info(self):
+        request = self.request
+        session = request.dbsession
+        user_count = session.query(func.count(models.Users.UserName), func.count(models.Record.NUM)).one()
+
+        has_data = any(user_count)
+        failed_updates = False
+        has_updated = True
+        if not has_data:
+            config = request.config
+            failed_updates = not not config.update_failure_count
+
+            has_updated = not not config.last_update
+
+        
+
+        return {'has_data': has_data, 'failed_updates': failed_updates, 'has_updated': has_updated}
 
 
 
