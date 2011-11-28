@@ -42,7 +42,6 @@ Filename: {app}\wsgisvc.exe; Parameters: "--startup auto install"; WorkingDir: {
 Filename: {app}\wsgisvc.exe; Parameters: "--wait 10 start"; WorkingDir: {app}; Flags: RunHidden; 
 Languages: english; Filename: http://localhost:8765/register; Flags: PostInstall ShellExec; Description: {cm:CompleteInstallation}; 
 Filename: http://localhost:8765/register?Ln=fr-CA; Flags: PostInstall ShellExec; Languages: french; Description: {cm:CompleteInstallation}; 
-Check: DoesNotHaveVC2008Runtime; Filename: {app}\wsgisvc.exe; 
 
 [UninstallRun]
 Filename: {app}\wsgisvc.exe; Parameters: "--wait stop"; WorkingDir: {app}; Flags: RunHidden; 
