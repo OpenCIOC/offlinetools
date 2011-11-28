@@ -11,8 +11,8 @@ log = logging.getLogger('offlinetools.subscribers')
 
 from markupsafe import Markup, escape
 
-not_html_re = re.compile(r'(<br>)|(<p>)|(<a\s+href)|(<b>)|(<strong>)|(<i>)|(<em>)|(<li>)|(<img\s+)|(<table\s+)|(&nbsp;)|(&amp;)|(h[1-6]>)|(<span[\s>])|(<div[\s>])')
-no_break_html_re = re.compile(r'(<br>)|(<p>)')
+not_html_re = re.compile(r'(<br>)|(<p>)|(<a\s+href)|(<b>)|(<strong>)|(<i>)|(<em>)|(<li>)|(<img\s+)|(<table\s+)|(&nbsp;)|(&amp;)|(h[1-6]>)|(<span[\s>])|(<div[\s>])', re.I)
+no_break_html_re = re.compile(r'(<br>)|(<p>)', re.I)
 
 br_markup = Markup('&nbsp;<br>')
 crlf_markup = Markup('\r\n')
