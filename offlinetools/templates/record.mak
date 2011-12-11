@@ -12,11 +12,11 @@
 <% group_fields = fields.get(group.DisplayFieldGroupID) %>
 %if group_fields:
 <tr>
-    <td colspan="2" class="ui-widget-header">${group.Name}</td>
+    <td colspan="2" class="ui-widget-header">${group.Name|n}</td>
 </tr>
 %for field in group_fields:
 <tr>
-    <td class="ui-widget-header field">${field.Name}
+    <td class="ui-widget-header field">${field.Name|n}</td>
     <td class="ui-widget-content">${textToHTML(record_data[field.FieldID].Value)}</td>
 </tr>
 
