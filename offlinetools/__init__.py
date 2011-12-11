@@ -111,7 +111,7 @@ def main(global_config, **settings):
                     permission='view', renderer='record.mak')
 
     config.add_route('comgen', '/comgen', pregenerator=passvars_pregen)
-    config.add_view('offlinetools.views.comgen.ComGen', renderer='json', route_name='comgen')
+    config.add_view('offlinetools.views.comgen.ComGen', renderer='json', route_name='comgen', permission='view')
 
     config.add_route('keywordgen', '/keywordgen', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.comgen.KeywordGen', renderer='json', route_name='keywordgen')
@@ -131,15 +131,15 @@ def main(global_config, **settings):
 
     config.add_route('register', '/register', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.register.Register', route_name='register', request_method='POST',
-                    attr='post', renderer='register.mak')
+                    attr='post', renderer='register.mak', permission=NO_PERMISSION_REQUIRED)
     config.add_view('offlinetools.views.register.Register', route_name='register',
-                    attr='get', renderer='register.mak')
+                    attr='get', renderer='register.mak', permission=NO_PERMISSION_REQUIRED)
 
     config.add_route('pull', '/pull', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.pull.Pull', route_name='pull', renderer='pull.mak')
 
     config.add_route('pull_status', '/pullstatus', pregenerator=passvars_pregen, factory='pyramid.traversal.DefaultRootFactory')
-    config.add_view('offlinetools.views.pull.PullStatus', route_name='pull_status', renderer='json')
+    config.add_view('offlinetools.views.pull.PullStatus', route_name='pull_status', renderer='json', permission=NO_PERMISSION_REQUIRED)
 
     config.add_route('status', '/status', factory='offlinetools.views.status.StatusRootFactory', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.status.Status', route_name='status', 
