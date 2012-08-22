@@ -35,6 +35,7 @@ def key_to_schedule(pubkey):
     night_time = timedelta(0, night_slot * 30)
     night_time = (datetime(2010, 1, 1, 0) + night_time).time()
 
+    #return {'day_of_week': 'Mon', 'hour': 12, 'minute': 00, 'second': 40}
     return {'day_of_week': days[int(day)], 'hour': night_time.hour, 'minute': night_time.minute, 'second': night_time.second}
 
 

@@ -35,7 +35,7 @@ ${renderer.form_passvars()}
 		</tr>
 	</table>
 	<br>
-	<input type="submit" value="Submit"> <input type="reset" value="Clear">
+	<input type="submit" value="${_('Search')}"> <input type="reset" value="${_('Clear')}">
 </form>
 
 <table class="form-table status-summary">
