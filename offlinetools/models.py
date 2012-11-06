@@ -228,7 +228,8 @@ def initialize_languages(session):
 def on_connect_set_pragmas(dbapi_connection, connection_record):
     try:
         dbapi_connection.execute('PRAGMA cache_size=20000')
-        dbapi_connection.execute('PRAGMA synchronous=1')
+        dbapi_connection.execute('PRAGMA synchronous = OFF')
+        dbapi_connection.execute('PRAGMA journal_mode = MEMORY')
     except Exception, e:
         log.exception(e)
 
@@ -242,7 +243,8 @@ def initialize_sql(engine):
     session=DBSession()
     connection = session.connection()
     connection.execute('PRAGMA cache_size=20000')
-    connection.execute('PRAGMA synchronous=1')
+    connection.execute('PRAGMA synchronous = OFF')
+    connection.execute('PRAGMA journal_mode = MEMORY')
     try:
         get_config()
     except IntegrityError:
