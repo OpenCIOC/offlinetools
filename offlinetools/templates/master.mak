@@ -1,3 +1,6 @@
+<%!
+from offlinetools import const
+%>
 <!doctype html>
 <!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
@@ -71,7 +74,7 @@
     </div>
 
 <footer>
-
+<div style="float: right; position: fixed; bottom: 0; right: 0; padding: .25em; font-size: 85%;"><em>${_('Offline Tools Version: ')}${const.OFFLINE_TOOLS_VERSION}</em></div>
 </footer>
 
 </div> <!-- #wrap -->

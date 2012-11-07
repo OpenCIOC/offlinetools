@@ -167,6 +167,7 @@ class OfflineToolsRequest(Request):
 
 tsf = TranslationStringFactory('offlinetools')
 
+
 def passvars_pregen(request, elements, kw):
     query = kw.get('_query')
     ln = kw.pop('_ln', None)

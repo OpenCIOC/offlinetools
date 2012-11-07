@@ -31,6 +31,7 @@ ${renderer.hidden('came_from')}
 <input type="submit" value="${_('Login')}">
 </form>
 
+
 %else:
 
 ${renderer.error_msg(_('This tool does not have any data'))}

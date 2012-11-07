@@ -64,7 +64,7 @@ class Target(object):
     def __init__(self, **kw):
         self.__dict__.update(kw)
         # for the versioninfo resources
-        self.version = "0.1.0"
+        self.version = "1.1.0"
         self.company_name = "Community Information Online Consortium"
         self.copyright = "Copyright 2011 Community Information Online Consortium"
         self.name = "CIOC Offline Tools Service"

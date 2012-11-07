@@ -1,5 +1,5 @@
 from datetime import time
-import re 
+import re
 
 from formencode import Schema
 from sqlalchemy import and_, or_
@@ -14,6 +14,7 @@ from offlinetools.scheduler import key_to_schedule
 import logging
 log = logging.getLogger('offlinetools.views.search')
 
+
 class SearchSchema(Schema):
     allow_extra_fields = True
     filter_extra_fields = True
@@ -23,22 +24,21 @@ class SearchSchema(Schema):
     Community = validators.UnicodeString(max=255)
     LocatedIn = validators.StringBool()
 
+
 def process_search_text_value(val):
-    val = val.replace('\\', '\\\\') 
+    val = val.replace('\\', '\\\\')
     val = val.replace('%', '\\%')
     val = val.replace('_', '\\_')
 
     return val
 
 _terms_re = re.compile(r'''( |\".*?\"|'.*?')''')
+
+
 class Search(ViewBase):
-    #@view_config(route_name='search', permission='view', renderer='search.mak')
     def search(self):
         return self._get_form_values()
 
-
-
-    #@view_config(route_name='results', permission='view', renderer='results.mak')
     def results(self):
         request = self.request
 
@@ -46,18 +46,16 @@ class Search(ViewBase):
         model_state.schema = SearchSchema()
         model_state.method = None
 
-
         if not model_state.validate():
             request.override_renderer = 'search.mak'
             log.debug('errors: %s', model_state.form.errors)
             return self._get_form_values()
 
-        LangID=request.language.LangID
+        LangID = request.language.LangID
         ViewType = request.user.ViewType
         session = request.dbsession
-        
-        filters = [#models.Record.views.any(models.View.ViewType==ViewType), 
-                   models.Record.LangID==LangID]
+
+        filters = [models.Record.LangID == LangID]
 
         if model_state.value('Terms'):
             strip_chars = ' \t\r\n\'"'
@@ -67,7 +65,7 @@ class Search(ViewBase):
 
         community = model_state.value('Community')
         if community:
-            row = session.query(models.Community_Name.CM_ID, models.Community.ParentCommunity).join(models.Community, models.Community.CM_ID==models.Community_Name.CM_ID).filter(models.Community_Name.Name.like(community)).order_by(case(value=models.Community_Name.LangID, whens={LangID: 0}, else_=1),models.Community_Name.LangID).first()
+            row = session.query(models.Community_Name.CM_ID, models.Community.ParentCommunity).join(models.Community, models.Community.CM_ID == models.Community_Name.CM_ID).filter(models.Community_Name.Name.like(community)).order_by(case(value=models.Community_Name.LangID, whens={LangID: 0}, else_=1), models.Community_Name.LangID).first()
             log.debug('Community: %s', row)
             if row and row[0]:
 
@@ -86,41 +84,33 @@ class Search(ViewBase):
                 for i in range(12):
                     if Parent is None:
                         break
-                    
+
                     CM_IDS.add(Parent)
-                    Parent = session.query(models.Community.ParentCommunity).filter(models.Community.CM_ID==Parent).first() #there should be only one
+                    Parent = session.query(models.Community.ParentCommunity).filter(models.Community.CM_ID == Parent).first()  # there should be only one
                     if Parent:
                         Parent = Parent[0]
                 else:
                     CM_IDS.add(Parent)
 
-
-
-                log.debug('Communities: %s', session.query(models.Community.CM_ID, models.Community.ParentCommunity, models.Community_Name.Name).join(models.Community_Name).filter(models.Community_Name.LangID==0).filter(models.Community.CM_ID.in_(CM_IDS)).all())
+                log.debug('Communities: %s', session.query(models.Community.CM_ID, models.Community.ParentCommunity, models.Community_Name.Name).join(models.Community_Name).filter(models.Community_Name.LangID == 0).filter(models.Community.CM_ID.in_(CM_IDS)).all())
 
                 if model_state.value('LocatedIn'):
-                    filters.append(or_(models.Record.LOCATED_IN_CM==None, models.Record.LOCATED_IN_CM.in_(CM_IDS)))
+                    filters.append(or_(models.Record.LOCATED_IN_CM == None, models.Record.LOCATED_IN_CM.in_(CM_IDS)))  # noqa
                 else:
                     filters.append(models.Record.communities.any(models.Community.CM_ID.in_(CM_IDS)))
 
         quick_list = model_state.value('QuickList')
         if quick_list:
-            filters.append(models.Record.publications.any(models.Publication.ListID==quick_list))
-
+            filters.append(models.Record.publications.any(models.Publication.ListID == quick_list))
 
         stmt = (session.query(models.Record.NUM, models.Record.LOCATED_IN_Cache, models.Record.OrgName_Cache).
-                join(models.Record_Views, and_(models.Record_Views.c.NUM==models.Record.NUM, models.Record_Views.c.ViewType==ViewType)))
+                join(models.Record_Views, and_(models.Record_Views.c.NUM == models.Record.NUM, models.Record_Views.c.ViewType == ViewType)))
 
-        results = stmt.filter(and_(*filters)).order_by(collate(models.Record.OrgName_Cache, 'NOCASE'),models.Record.NUM).all()
+        results = stmt.filter(and_(*filters)).order_by(collate(models.Record.OrgName_Cache, 'NOCASE'), models.Record.NUM).all()
 
         log.debug('Return')
 
-                     
         return {'results': results}
-
-
-
-
 
     def _get_form_values(self):
         request = self.request
@@ -131,21 +121,18 @@ class Search(ViewBase):
         LangID = request.language.LangID
 
         publications = session.query(models.Publication.ListID, models.Publication_Name.Name).\
-                join(models.Publication.names).\
-                filter(and_(
-                    models.Publication_Name.LangID==LangID,
-                    models.Publication.views.any(ViewType=ViewType))).\
-                order_by(models.Publication_Name.Name).all()
+            join(models.Publication.names).\
+            filter(and_(
+                models.Publication_Name.LangID == LangID,
+                models.Publication.views.any(ViewType=ViewType))).\
+            order_by(models.Publication_Name.Name).all()
 
-        
         cfg = request.config
 
         schedule = key_to_schedule(cfg.public_key)
 
         _ = request.translate
-        schedule = _(' @ ').join([_(schedule['day_of_week']), 
+        schedule = _(' @ ').join([_(schedule['day_of_week']),
                                   request.format_time(time(*[schedule[x] for x in ['hour', 'minute', 'second']]))])
-        
+
         return {'quicklist': map(tuple, publications), 'config': cfg, 'schedule': schedule}
-
-

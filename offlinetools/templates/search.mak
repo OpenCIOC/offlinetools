@@ -1,4 +1,7 @@
 <%inherit file="master.mak" />
+<%!
+from offlinetools import const
+%>
 <%block name="title">Search</%block>
 <%block name="newsearch"/>
 
@@ -39,6 +42,10 @@ ${renderer.form_passvars()}
 </form>
 
 <table class="form-table status-summary">
+<tr>
+	<td class="ui-widget-header">${_('Version')}</td>
+	<td class="ui-widget-content">${const.OFFLINE_TOOLS_VERSION}</td>
+</tr>
 <tr>
 	<td class="ui-widget-header">${_('Last Updated')}</td>
 	<td class="ui-widget-content">${request.format_datetime(config.last_update)}</td>

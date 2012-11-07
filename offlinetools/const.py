@@ -6,6 +6,9 @@
 # software, please contact CIOC via their website above.
 #==================================================================
 
+# Software Version
+OFFLINE_TOOLS_VERSION = '1.1.0'
+
 #jQuery and jQueryUI versions
 JQUERY_VERSION = "1.6.2"
 JQUERY_UI_VERSION = "1.8.16"

@@ -1,4 +1,7 @@
 <%inherit file="master.mak"/>
+<%!
+from offlinetools import const
+%>
 <%block name="title">${_('Status')}</%block>
 %if not request.database_has_data:
 <%block name="sitenav"/>
@@ -7,6 +10,10 @@
 <%! from markupsafe import Markup, escape %>
 
 <table class="form-table">
+<tr>
+	<td class="ui-widget-header">${_('Version')}</td>
+	<td class="ui-widget-content">${const.OFFLINE_TOOLS_VERSION}</td>
+</tr>
 <tr>
 	<td class="ui-widget-header">${_('Last Updated')}</td>
 	<td class="ui-widget-content">${request.format_datetime(config.last_update)}</td>
