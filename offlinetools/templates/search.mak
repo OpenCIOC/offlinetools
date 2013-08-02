@@ -6,6 +6,14 @@ from offlinetools import const
 <%block name="newsearch"/>
 
 ${renderer.error_notice()}
+
+<%doc>
+<!-- ERRORS
+
+${renderer.form.errors}
+
+-->
+</%doc>
 <form method="get" action="${request.route_url('results', _form=True)}" id="SearchForm">
 ${renderer.form_passvars()}
 	<table class="form-table">

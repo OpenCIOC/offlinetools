@@ -7,7 +7,7 @@
 #==================================================================
 
 # Software Version
-OFFLINE_TOOLS_VERSION = '1.1.0'
+OFFLINE_TOOLS_VERSION = '1.1.1'
 
 #jQuery and jQueryUI versions
 JQUERY_VERSION = "1.6.2"

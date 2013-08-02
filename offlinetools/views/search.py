@@ -19,6 +19,8 @@ class SearchSchema(Schema):
     allow_extra_fields = True
     filter_extra_fields = True
 
+    if_key_missing = None
+
     Terms = validators.UnicodeString(max=255)
     QuickList = validators.UnicodeString(max=50)
     Community = validators.UnicodeString(max=255)
