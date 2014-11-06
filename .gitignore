@@ -3,3 +3,4 @@ OfflineTools.db
 Output
 build
 dist
+*.egg-info/

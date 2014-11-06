@@ -1,3 +1,21 @@
+1.1.2
+-----
+
+- Fix order of operations that prevents update after change to map
+  SITE_ADDRESS_MAPPED to SITE_ADDRESS
+
+1.1.1
+-----
+
+- Fix search always errors if there is no quick-list
+
+1.1
+---
+
+- Show version and last update status on search page
+- Bug fixes, performance improvements
+
+
 0.0
 ---
 

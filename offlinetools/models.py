@@ -53,7 +53,7 @@ class LangMixIn(object):
 class View(Base):
     ViewType = Column(Integer, primary_key=True, index=True)
     names = relationship('View_Name', cascade='all', backref='view')
-    #fieldgroups = relationship('FieldGroup', cascade='all', backref='view')
+    # fieldgroups = relationship('FieldGroup', cascade='all', backref='view')
     users = relationship('Users', cascade='all', backref='view')
 
 
@@ -67,9 +67,8 @@ class Community(Base):
     ParentCommunity = Column(Integer, ForeignKey('Community.CM_ID', onupdate='CASCADE', ondelete='CASCADE'), index=True)
     names = relationship('Community_Name', cascade='all', backref='community')
 
-    children = relationship("Community",
-                backref=backref('parent', remote_side=[CM_ID])
-            )
+    children = relationship(
+        "Community", backref=backref('parent', remote_side=[CM_ID]))
 
 
 class Community_Name(LangMixIn, Base):

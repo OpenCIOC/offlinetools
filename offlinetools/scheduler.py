@@ -43,7 +43,7 @@ def key_to_schedule(pubkey):
     night_time = timedelta(0, night_slot * 30)
     night_time = (datetime(2010, 1, 1, 0) + night_time).time()
 
-    #return {'day_of_week': 'Mon', 'hour': 12, 'minute': 00, 'second': 40}
+    # return {'day_of_week': 'Mon', 'hour': 12, 'minute': 00, 'second': 40}
     return {'day_of_week': days[int(day)], 'hour': night_time.hour, 'minute': night_time.minute, 'second': night_time.second}
 
 
@@ -252,28 +252,48 @@ class PullObject(object):
         return
 
     def _update(self, data, expect_second_update):
-        #session = self.dbsession
+        # session = self.dbsession
 
         self._expect_second_update = expect_second_update
 
-        inserts = [self._insert_views, self._insert_communities, self._insert_publications,
-                   self._insert_publication_views, self._insert_field_groups,
-                   self._insert_fields, self._insert_fieldgroup_fields,
-                   self._insert_users, self._insert_records, self._insert_record_views,
-                   self._insert_records_communities, self._insert_records_publications]
+        views = [self._delete_views, self._update_views, self._insert_views]
+        communities = [self._delete_communities, self._update_communities, self._insert_communities]
+        publications = [self._delete_publications, self._update_publications, self._insert_publications]
+        publication_views = [self._delete_publication_views, self._update_publication_views, self._insert_publication_views]
+        field_groups = [self._delete_field_groups, self._update_field_groups, self._insert_field_groups]
+        fields = [self._delete_fields, self._update_fields, self._insert_fields]
+        fieldgroup_fields = [self._delete_fieldgroup_fields, self._update_fieldgroup_fields, self._insert_fieldgroup_fields]
+        users = [self._delete_users, self._update_users, self._insert_users]
+        records = [self._insert_records]
+        record_views = [self._insert_record_views]
+        records_communities = [self._delete_records_communities, self._update_records_communities, self._insert_records_communities]
+        records_publications = [self._delete_records_publications, self._update_records_publications, self._insert_records_publications]
 
-        updates = [self._update_views, self._update_communities, self._update_publications,
-                   self._update_field_groups, self._update_fields, self._update_users,
-                  self._update_record_data]
+        record_data = [self._update_record_data]
 
-        deletes = [self._delete_views, self._delete_communities, self._delete_publications,
-                   self._delete_publication_views, self._delete_field_groups,
-                   self._delete_fields, self._delete_fieldgroup_fields,
-                   self._delete_users,  # self._delete_records,
-                   #self._delete_record_views,
-                   self._delete_records_communities, self._delete_records_publications]
+#         inserts = [self._insert_views, self._insert_communities, self._insert_publications,
+#                    self._insert_publication_views, self._insert_field_groups,
+#                    self._insert_fields, self._insert_fieldgroup_fields,
+#                    self._insert_users, self._insert_records, self._insert_record_views,
+#                    self._insert_records_communities, self._insert_records_publications]
+#
+#         updates = [self._update_views, self._update_communities, self._update_publications,
+#                    self._update_field_groups, self._update_fields, self._update_users,
+#                   self._update_record_data]
+#
+#         deletes = [self._delete_views, self._delete_communities, self._delete_publications,
+#                    self._delete_publication_views, self._delete_field_groups,
+#                    self._delete_fields, self._delete_fieldgroup_fields,
+#                    self._delete_users,  # self._delete_records,
+#                    #self._delete_record_views,
+#                    self._delete_records_communities, self._delete_records_publications]
 
-        tasks = inserts + updates + deletes
+        tasks = (
+            views + communities + publications + publication_views +
+            field_groups + fields + fieldgroup_fields + users + records +
+            record_views + records_communities + records_publications +
+            record_data
+        )
 
         total_tasks = len(tasks)
 

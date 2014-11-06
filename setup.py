@@ -31,6 +31,8 @@ import compileall
 
 compileall.compile_dir("offlinetools", force=1)
 
+version = "1.1.2"
+
 
 def find_data_files(source, target, patterns=None):
     """Locates the specified data-files and returns the matches
@@ -63,7 +65,7 @@ class Target(object):
     def __init__(self, **kw):
         self.__dict__.update(kw)
         # for the versioninfo resources
-        self.version = "1.1.1"
+        self.version = version
         self.company_name = "Community Information Online Consortium"
         self.copyright = "Copyright 2011 Community Information Online Consortium"
         self.name = "CIOC Offline Tools Service"
@@ -107,7 +109,7 @@ if sys.version_info[:3] < (2, 5, 0):
 
 setup(
     name='OfflineTools',
-    version='1.1.1',
+    version=version,
     description='CIOC Offline Tools',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[

@@ -13,26 +13,26 @@ from win32com.shell import shell, shellcon
 
 from apscheduler.scheduler import Scheduler
 
+from offlinetools import const
 from offlinetools.models import initialize_sql, get_config
 from offlinetools.request import passvars_pregen
 from offlinetools.scheduler import scheduled_pull, key_to_schedule
 
 
 import requests
-
-__version__ = '0.1'
-
-import logging 
+import logging
 
 log = logging.getLogger('offlinetools')
+
 
 def groupfinder(userid, request):
     user = request.user
     if user is not None:
         log.debug('user: %s, %d', user.UserName, user.ViewType)
-        return [ 'group:' + str(user.ViewType) ]
+        return ['group:' + str(user.ViewType)]
 
     return None
+
 
 class RootFactory(object):
     __acl__ = [(Allow, Authenticated, 'view'), (Deny, Everyone, 'view')]
@@ -50,27 +50,29 @@ def found_view(request):
     return request.context
 
 sched = None
+
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
 
     global sched
 
-    requests.defaults.defaults['base_headers']['User-Agent'] = 'CIOC Offline Tools/%s' % __version__
+    requests.defaults.defaults['base_headers']['User-Agent'] = 'CIOC Offline Tools/%s' % const.OFFLINE_TOOLS_VERSION
 
     cacerts = settings.get('offlinetools.cacerts')
     if cacerts:
         from offlinetools.httpsfix import install_validating_https
         install_validating_https(os.path.abspath(cacerts))
 
-    common_appdata_path =  shell.SHGetFolderPath (0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
+    common_appdata_path = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
     app_data_dir = os.path.join(common_appdata_path, 'CIOC', 'OfflineTools')
     try:
         os.makedirs(app_data_dir)
     except os.error, e:
         log.debug('os.error: %s', e)
 
-    engine = create_engine('sqlite:///%s\\OfflineTools.db' % app_data_dir, isolation_level= 'READ UNCOMMITTED')
+    engine = create_engine('sqlite:///%s\\OfflineTools.db' % app_data_dir, isolation_level='READ UNCOMMITTED')
     initialize_sql(engine)
 
     cfg = get_config()
@@ -121,10 +123,9 @@ def main(global_config, **settings):
                     request_method='POST', attr='post', permission=NO_PERMISSION_REQUIRED)
     config.add_view('offlinetools.views.login.Login', renderer='login.mak', route_name='login',
                     attr='get', permission=NO_PERMISSION_REQUIRED)
-    config.add_view('offlinetools.views.login.Login', renderer='login.mak', 
-                    context='pyramid.httpexceptions.HTTPForbidden', 
+    config.add_view('offlinetools.views.login.Login', renderer='login.mak',
+                    context='pyramid.httpexceptions.HTTPForbidden',
                     attr='get', permission=NO_PERMISSION_REQUIRED)
-
 
     config.add_route('logout', '/logout', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.login.logout', route_name='logout', permission=NO_PERMISSION_REQUIRED)
@@ -142,7 +143,7 @@ def main(global_config, **settings):
     config.add_view('offlinetools.views.pull.PullStatus', route_name='pull_status', renderer='json', permission=NO_PERMISSION_REQUIRED)
 
     config.add_route('status', '/status', factory='offlinetools.views.status.StatusRootFactory', pregenerator=passvars_pregen)
-    config.add_view('offlinetools.views.status.Status', route_name='status', 
+    config.add_view('offlinetools.views.status.Status', route_name='status',
                     renderer='status.mak', permission='view')
 
     config.add_subscriber('offlinetools.subscribers.add_renderer_globals',
@@ -150,4 +151,3 @@ def main(global_config, **settings):
 
     config.scan()
     return config.make_wsgi_app()
-
