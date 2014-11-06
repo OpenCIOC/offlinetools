@@ -347,6 +347,9 @@ class PullObject(object):
                                    ['Name'])
 
     def _update_fields(self, data):
+        session = self.dbsession
+        conn = session.connection()
+        conn.execute('UPDATE Field SET FieldName=FieldName || \'_tmp\'')
         self._update_named_records(data['fields'], models.Field, models.Field_Name,
                                    'FieldID',
                                    ['FieldName',

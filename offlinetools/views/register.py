@@ -1,9 +1,9 @@
-import urlparse, json
+import urlparse
+import json
 
 from formencode import Schema
 import requests
 
-from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPFound
 import transaction
 
@@ -13,6 +13,7 @@ from offlinetools.views import validators
 
 import logging
 log = logging.getLogger('offlinetools.views.register')
+
 
 class RegisterSchema(Schema):
     allow_extra_fields = True
@@ -26,12 +27,10 @@ class RegisterSchema(Schema):
     SiteTitle = validators.UnicodeString(max=255, not_empty=True)
 
 
-
 class Register(ViewBase):
 
     __skip_register_check__ = True
-    
-    #@view_config(route_name="register", request_method="POST", renderer='register.mak')
+
     def post(self):
         request = self.request
         _ = request.translate
@@ -39,9 +38,8 @@ class Register(ViewBase):
         model_state = request.model_state
         cfg = request.config
 
-
         if cfg.machine_name:
-            #maybe allow updateing info
+            # maybe allow updateing info
             request.session.flash(_('Site Already Registered.'))
             return HTTPFound(location=request.route_url('search'))
 
@@ -74,7 +72,6 @@ class Register(ViewBase):
             model_state.add_error_for('*', _('CIOC site returned unexpected value'))
             return {}
 
-
         # XXX this should be a well known https protected site that only
         # translates hostnames to a preferred sslable hostname
         parsedurl = urlparse.urlparse(model_state.value('CiocSite'))
@@ -82,12 +79,11 @@ class Register(ViewBase):
         hostname = parsedurl.hostname.lower()
         for sec_host, all_hosts in data.iteritems():
             if hostname == sec_host or hostname in all_hosts:
-                break;
+                break
         else:
             model_state.add_error_for('*', _('Source CIOC Site is unknown'))
             return {}
 
-        
         auth = (model_state.value('LoginName').encode('utf-8'), model_state.value('LoginPwd').encode('utf-8'))
         params = {'MachineName': model_state.value('MachineName').encode('utf-8'),
                   'PublicKey': cfg.public_key.encode('utf-8')}
@@ -100,7 +96,6 @@ class Register(ViewBase):
             log.error('unable to contact %s: %s, %s', url, r.headers['status'], e)
             model_state.add_error_for('*', _('Unable to connect to Source CIOC site: %s') % e)
             return {}
-
 
         if r.headers['content-type'].split(';')[0] != 'application/json':
             log.error('invalid content type for %s: %s', url, r.headers['content-type'])
@@ -115,14 +110,12 @@ class Register(ViewBase):
             model_state.add_error_for('*', _('CIOC site returned unexpected value'))
             return {}
 
-
         if data['fail']:
             log.error('Unable to register with source cioc site: %s', data['message'])
             model_state.add_error_for('*', _('Unable to register with Source CIOC site: %s') % data['message'])
             return {}
 
-
-        # success! 
+        # success!
         cfg.update_url = sec_host
         cfg.machine_name = model_state.value('MachineName')
         cfg.site_title = model_state.value('SiteTitle')
@@ -130,18 +123,14 @@ class Register(ViewBase):
         transaction.commit()
         return HTTPFound(location=request.route_url('pull'))
 
-
-    #@view_config(route_name="register", renderer="register.mak")
     def get(self):
         request = self.request
         _ = request.translate
         cfg = models.get_config(request)
 
         if cfg.machine_name or cfg.update_url:
-            #maybe allow updateing info
+            # maybe allow updateing info
             request.session.flash(_('Site Already Registered.'))
             return HTTPFound(location=request.route_url('search'))
 
-
         return {}
-

@@ -13,7 +13,7 @@
 ---
 
 - Show version and last update status on search page
-- Bug fixes, performance improvements
+- Bug fixes & performance improvements
 
 
 0.0

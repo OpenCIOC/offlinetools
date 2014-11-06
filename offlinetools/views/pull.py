@@ -12,10 +12,11 @@ log = logging.getLogger('offlinetools.views.pull')
 initial_pull = None
 initial_pull_thread = None
 
+
 class Pull(ViewBase):
-    #@view_config(route_name="pull", renderer="pull.mak")
+
     def __call__(self):
-        global initial_pull,initial_pull_thread
+        global initial_pull, initial_pull_thread
         request = self.request
         cfg = models.get_config(request)
 
@@ -34,16 +35,17 @@ class Pull(ViewBase):
 
         return {}
 
-    #@view_config(route_name="pull_status", renderer="json")
+
 class PullStatus(ViewBase):
     __skip_register_check__ = True
+
     def __call__(self):
-        global initial_pull,initial_pull_thread
+        global initial_pull, initial_pull_thread
 
         if initial_pull:
 
             if initial_pull.completion_code == 'ok':
-                ret =  {'percent': 100, 'status': 'done'}
+                ret = {'percent': 100, 'status': 'done'}
             else:
                 ret = {'percent': int(initial_pull.status), 'status': initial_pull.completion_code}
 
@@ -54,6 +56,3 @@ class PullStatus(ViewBase):
             return ret
 
         return {'status': 'invalid', 'percent': 0}
-
-
-
