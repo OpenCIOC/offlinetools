@@ -4,6 +4,8 @@ import fnmatch
 from collections import defaultdict
 from setuptools import setup, find_packages
 
+version = "1.1.3"
+
 try:
     # py2exe 0.6.4 introduced a replacement modulefinder.
     # This means we have to add package paths there, not to the built-in
@@ -30,8 +32,6 @@ import py2exe  # noqa
 import compileall
 
 compileall.compile_dir("offlinetools", force=1)
-
-version = "1.1.2"
 
 
 def find_data_files(source, target, patterns=None):

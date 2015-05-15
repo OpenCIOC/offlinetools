@@ -136,6 +136,12 @@ def main(global_config, **settings):
     config.add_view('offlinetools.views.register.Register', route_name='register',
                     attr='get', renderer='register.mak', permission=NO_PERMISSION_REQUIRED)
 
+    config.add_route('updateconfig', '/config', pregenerator=passvars_pregen)
+    config.add_view('offlinetools.views.register.UpdateUrl', route_name='updateconfig', request_method='POST',
+                    attr='post', renderer='updateurl.mak', permission=NO_PERMISSION_REQUIRED)
+    config.add_view('offlinetools.views.register.UpdateUrl', route_name='updateconfig',
+                    attr='get', renderer='updateurl.mak', permission=NO_PERMISSION_REQUIRED)
+
     config.add_route('pull', '/pull', pregenerator=passvars_pregen)
     config.add_view('offlinetools.views.pull.Pull', route_name='pull', renderer='pull.mak')
 

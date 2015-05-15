@@ -27,6 +27,56 @@ class RegisterSchema(Schema):
     SiteTitle = validators.UnicodeString(max=255, not_empty=True)
 
 
+class UpdateUrlSchema(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+
+    CiocSite = validators.URL(add_http=True, not_empty=True)
+
+
+class UrlTranslationError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
+def translate_login_site_to_secure_url(request, login_url):
+        _ = request.translate
+        mapping_url = request.registry.settings.get('offlinetools.map_to_secure_url', 'https://offline-tools.cioc.ca/ot_secure_host_mapping.json')
+
+        headers = {'Accept': 'application/json'}
+        r = requests.get(mapping_url, headers=headers)
+        try:
+            r.raise_for_status()
+        except Exception, e:
+            log.error('unable to contact %s: %s, %s', mapping_url, r.headers['status'], e)
+            raise UrlTranslationError(_('Unable to connect to CIOC servers: %s') % e)
+
+        if r.headers['content-type'].split(';')[0] != 'application/json':
+            log.error('invalid content type for %s: %s', mapping_url, r.headers['content-type'])
+            raise UrlTranslationError(_('CIOC site returned unexpected response'))
+
+        try:
+            data = json.loads(r.content.decode('utf-8'))
+        except ValueError, e:
+            log.error('JSON parse error for %s: %s', mapping_url, e)
+            log.debug(u'r.content: %s', r.content.decode('utf-8'))
+            raise UrlTranslationError(_('CIOC site returned unexpected value'))
+
+        # XXX this should be a well known https protected site that only
+        # translates hostnames to a preferred sslable hostname
+        parsedurl = urlparse.urlparse(login_url)
+
+        hostname = parsedurl.hostname.lower()
+        for sec_host, all_hosts in data.iteritems():
+            if hostname == sec_host or hostname in all_hosts:
+                break
+        else:
+            raise UrlTranslationError(_('Source CIOC Site is unknown'))
+            return {}
+
+        return sec_host
+
+
 class Register(ViewBase):
 
     __skip_register_check__ = True
@@ -48,42 +98,13 @@ class Register(ViewBase):
         if not model_state.validate():
             return {}
 
-        mapping_url = request.registry.settings.get('offlinetools.map_to_secure_url', 'https://www.cioc.ca/ot_secure_host_mapping.json')
+        try:
+            sec_host = translate_login_site_to_secure_url(request, model_state.value('CiocSite'))
+        except UrlTranslationError, e:
+            model_state.add_error_for('*', e.message)
+            return {}
 
         headers = {'Accept': 'application/json'}
-        r = requests.get(mapping_url, headers=headers)
-        try:
-            r.raise_for_status()
-        except Exception, e:
-            log.error('unable to contact %s: %s, %s', mapping_url, r.headers['status'], e)
-            model_state.add_error_for('*', _('Unable to connect to CIOC servers: %s') % e)
-            return {}
-
-        if r.headers['content-type'].split(';')[0] != 'application/json':
-            log.error('invalid content type for %s: %s', mapping_url, r.headers['content-type'])
-            model_state.add_error_for('*', _('CIOC site returned unexpected response'))
-            return {}
-
-        try:
-            data = json.loads(r.content.decode('utf-8'))
-        except ValueError, e:
-            log.error('JSON parse error for %s: %s', mapping_url, e)
-            log.debug(u'r.content: %s', r.content.decode('utf-8'))
-            model_state.add_error_for('*', _('CIOC site returned unexpected value'))
-            return {}
-
-        # XXX this should be a well known https protected site that only
-        # translates hostnames to a preferred sslable hostname
-        parsedurl = urlparse.urlparse(model_state.value('CiocSite'))
-
-        hostname = parsedurl.hostname.lower()
-        for sec_host, all_hosts in data.iteritems():
-            if hostname == sec_host or hostname in all_hosts:
-                break
-        else:
-            model_state.add_error_for('*', _('Source CIOC Site is unknown'))
-            return {}
-
         auth = (model_state.value('LoginName').encode('utf-8'), model_state.value('LoginPwd').encode('utf-8'))
         params = {'MachineName': model_state.value('MachineName').encode('utf-8'),
                   'PublicKey': cfg.public_key.encode('utf-8')}
@@ -133,4 +154,33 @@ class Register(ViewBase):
             request.session.flash(_('Site Already Registered.'))
             return HTTPFound(location=request.route_url('search'))
 
+        return {}
+
+
+class UpdateUrl(ViewBase):
+
+    def post(self):
+        request = self.request
+
+        model_state = request.model_state
+        cfg = request.config
+
+        model_state.schema = UpdateUrlSchema()
+
+        if not model_state.validate():
+            return {}
+
+        try:
+            sec_host = translate_login_site_to_secure_url(request, model_state.value('CiocSite'))
+        except UrlTranslationError, e:
+            model_state.add_error_for('*', e.message)
+            return {}
+
+        # success!
+        cfg.update_url = sec_host
+        request.dbsession.flush()
+        transaction.commit()
+        return HTTPFound(location=request.route_url('pull'))
+
+    def get(self):
         return {}
