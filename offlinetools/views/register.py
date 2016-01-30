@@ -7,7 +7,7 @@ import requests
 from pyramid.httpexceptions import HTTPFound
 import transaction
 
-from offlinetools import models
+from offlinetools import models, const, certstore
 from offlinetools.views.base import ViewBase
 from offlinetools.views import validators
 
@@ -43,8 +43,8 @@ def translate_login_site_to_secure_url(request, login_url):
         _ = request.translate
         mapping_url = request.registry.settings.get('offlinetools.map_to_secure_url', 'https://offline-tools.cioc.ca/ot_secure_host_mapping.json')
 
-        headers = {'Accept': 'application/json'}
-        r = requests.get(mapping_url, headers=headers)
+        headers = dict(const.DEFAULT_HEADERS, Accept='application/json')
+        r = requests.get(mapping_url, headers=headers, verify=certstore.certfile.name)
         try:
             r.raise_for_status()
         except Exception, e:
@@ -104,12 +104,12 @@ class Register(ViewBase):
             model_state.add_error_for('*', e.message)
             return {}
 
-        headers = {'Accept': 'application/json'}
+        headers = dict(const.DEFAULT_HEADERS, Accept='application/json')
         auth = (model_state.value('LoginName').encode('utf-8'), model_state.value('LoginPwd').encode('utf-8'))
         params = {'MachineName': model_state.value('MachineName').encode('utf-8'),
                   'PublicKey': cfg.public_key.encode('utf-8')}
         url = '%s/offline/register?Ln=%s' % (sec_host, request.language.Culture)
-        r = requests.post(url, data=params, headers=headers, auth=auth)
+        r = requests.post(url, data=params, headers=headers, auth=auth, verify=certstore.certfile.name)
 
         try:
             r.raise_for_status()

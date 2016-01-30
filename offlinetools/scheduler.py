@@ -21,7 +21,7 @@ from sqlalchemy.sql.expression import bindparam, select, delete, update
 
 
 # this app
-from offlinetools import models
+from offlinetools import models, const, certstore
 from offlinetools.keymgmt import get_signature
 
 log = logging.getLogger('offlinetools.scheduler')
@@ -131,7 +131,8 @@ class PullObject(object):
 
         # auth request
         auth_data = {'MachineName': cfg.machine_name}
-        r = requests.post(posixpath.join(url_base, 'auth'), auth_data)
+        r = requests.post(posixpath.join(url_base, 'auth'), auth_data, headers=const.DEFAULT_HEADERS, verify=certstore.certfile.name)
+
         try:
             r.raise_for_status()
         except Exception, e:
@@ -152,7 +153,7 @@ class PullObject(object):
         auth_data['ChallengeSig'] = json.dumps(signature)
         if cfg.last_update and not self.force:
             auth_data['FromDate'] = cfg.last_update.isoformat()
-        r = requests.post(posixpath.join(url_base, 'pull'), auth_data)
+        r = requests.post(posixpath.join(url_base, 'pull'), auth_data, headers=const.DEFAULT_HEADERS, verify=certstore.certfile.name)
         try:
             r.raise_for_status()
         except Exception, e:
@@ -196,7 +197,7 @@ class PullObject(object):
 
             auth_data['NewFields'] = list(sorted(set(unicode(x['FieldID']) for x in self._new_fields)))
             auth_data['NewRecords'] = list(sorted(set(x[0] for x in self._new_records)))
-            r = requests.post(posixpath.join(url_base, 'pull2'), auth_data)
+            r = requests.post(posixpath.join(url_base, 'pull2'), auth_data, headers=const.DEFAULT_HEADERS, verify=certstore.certfile.name)
             try:
                 r.raise_for_status()
             except Exception, e:

@@ -24,15 +24,25 @@ try:
         m = sys.modules[extra]
         for p in m.__path__[1:]:
             modulefinder.AddPackagePath(extra, p)
+    import pkg_resources
+    for p in pkg_resources.__path__[1:]:
+        modulefinder.AddPackagePath("pkg_resources", p)
+    for extra in ["pkg_resources.extern.packaging", 'pkg_resources.extern.six', 'pkg_resources.extern.six.moves']:
+        __import__(extra)
+        m = sys.modules[extra]
+        for p in m.__path__[1:]:
+            modulefinder.AddPackagePath(extra, p)
 except ImportError:
     # no build path setup, no worries.
     pass
 
-import py2exe  # noqa
-import compileall
+if 'py2exe' in sys.argv:
+    import py2exe  # noqa
+    import compileall
 
-compileall.compile_dir("offlinetools", force=1)
+    compileall.compile_dir("offlinetools", force=1)
 
+from distutils.sysconfig import get_python_lib
 
 def find_data_files(source, target, patterns=None):
     """Locates the specified data-files and returns the matches
@@ -85,7 +95,7 @@ README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid',
+    'pyramid==1.4.9',
     'SQLAlchemy',
     'transaction',
     'pyramid_tm',
@@ -101,6 +111,7 @@ requires = [
     'pyramid_simpleform',
     'pyramid_exclog',
     'Babel',
+    'wincertstore',
 
     ]
 
@@ -141,9 +152,13 @@ setup(
                 'BaseHTTPServer', 'urllib2', 'cgi', 'io', 'shutil', 'decimal',
                 'Cookie', 'win32com.shell.shell', 'win32com.shell.shellcon',
                 'xml.etree.cElementTree', 'xml.etree.ElementTree',
-                'collections'
+                'collections', 'pkgutil', 'symbol', 'distutils'
             ],
-            'excludes': [],
+            'excludes': [
+                "pywin", "pywin.debugger", "pywin.debugger.dbgcon",
+                "pywin.dialogs", "pywin.dialogs.list",
+                "Tkconstants", "Tkinter", "tcl", 'pkg_resources',
+            ],
             'dll_excludes': [
                 'POWRPROF.dll', 'API-MS-Win-Core-LocalRegistry-L1-1-0.dll',
                 'API-MS-Win-Core-ProcessThreads-L1-1-0.dll',
@@ -157,7 +172,6 @@ setup(
         find_data_files(r'offlinetools\locale', 'offlinetools\locale', '*.mo') +
         find_data_files(r'offlinetools\static', 'offlinetools\static') +
         find_data_files('OfflineTools.egg-info', 'OfflineTools.egg-info') +
-        find_data_files(r'c:\work\cioc\offlinetoolsenv\Lib\site-packages', 'site-packages')
-        + [('', ['production.ini', 'cacert.pem'])]
+        find_data_files(get_python_lib(), 'site-packages')
     )
 )

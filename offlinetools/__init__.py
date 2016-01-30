@@ -13,13 +13,10 @@ from win32com.shell import shell, shellcon
 
 from apscheduler.scheduler import Scheduler
 
-from offlinetools import const
 from offlinetools.models import initialize_sql, get_config
 from offlinetools.request import passvars_pregen
 from offlinetools.scheduler import scheduled_pull, key_to_schedule
 
-
-import requests
 import logging
 
 log = logging.getLogger('offlinetools')
@@ -57,13 +54,6 @@ def main(global_config, **settings):
     """
 
     global sched
-
-    requests.defaults.defaults['base_headers']['User-Agent'] = 'CIOC Offline Tools/%s' % const.OFFLINE_TOOLS_VERSION
-
-    cacerts = settings.get('offlinetools.cacerts')
-    if cacerts:
-        from offlinetools.httpsfix import install_validating_https
-        install_validating_https(os.path.abspath(cacerts))
 
     common_appdata_path = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
     app_data_dir = os.path.join(common_appdata_path, 'CIOC', 'OfflineTools')

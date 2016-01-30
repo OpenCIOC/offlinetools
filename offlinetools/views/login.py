@@ -1,14 +1,17 @@
+from hashlib import pbkdf2_hmac
+
 from pyramid.httpexceptions import HTTPFound
 from pyramid.security import remember, forget
 
 from formencode import Schema
-from beaker.crypto.pbkdf2 import PBKDF2
 from sqlalchemy import func
 
 from offlinetools import models
 from offlinetools.views.base import ViewBase
 from offlinetools.views import validators
 from offlinetools.syslanguage import _culture_list, default_culture
+
+DEFAULT_REPEAT = 100000
 
 
 class LoginSchema(Schema):
@@ -21,7 +24,6 @@ class LoginSchema(Schema):
     came_from = validators.UnicodeString()
 
 class Login(ViewBase):
-    #@view_config(route_name="login", request_method="POST", renderer='login.mak', permission=NO_PERMISSION_REQUIRED)
     def post(self):
         request = self.request
         _ = request.translate
@@ -52,8 +54,6 @@ class Login(ViewBase):
         return HTTPFound(location=model_state.value('came_from', request.route_url('search', ln=start_ln[0])), 
                          headers=headers)
 
-    #@view_config(route_name="login", renderer="login.mak", permission=NO_PERMISSION_REQUIRED)
-    #@view_config(context='pyramid.httpexceptions.HTTPForbidden', renderer="login.mak", permission=NO_PERMISSION_REQUIRED)
     def get(self):
         request = self.request
         login_url = request.route_url('login')
@@ -85,13 +85,10 @@ class Login(ViewBase):
         return {'has_data': has_data, 'failed_updates': failed_updates, 'has_updated': has_updated}
 
 
-
-#@view_config(route_name="logout", permission=NO_PERMISSION_REQUIRED)
 def logout(request):
     headers = forget(request)
     return HTTPFound(location = request.route_url('login'),
                      headers = headers)
 
-def Crypt(salt, password, repeat):
-	pbkdf2 = PBKDF2(password, salt, int(repeat))
-	return pbkdf2.read(33).encode('base64').strip()
+def Crypt(salt, password, repeat=DEFAULT_REPEAT):
+    return pbkdf2_hmac('sha1', password, salt, repeat, 33).encode('base64').strip()

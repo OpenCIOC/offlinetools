@@ -1,0 +1,17 @@
+pyramid==1.4.9
+SQLAlchemy==0.7.10
+transaction==1.4.4
+requests==2.9.1
+pyramid_tm==0.12.1
+zope.sqlalchemy
+https://github.com/formencode/formencode/archive/master.zip#egg=formencode
+paste
+pyramid_beaker==0.6.1
+backports.ssl_match_hostname
+PyCrypto
+webhelpers2
+https://github.com/Pylons/pyramid_simpleform/archive/master.zip#egg=pyramid_simpleform
+pyramid_exclog
+Babel
+wincertstore
+apscheduler==2.0.2
