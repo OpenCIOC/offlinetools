@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,7 +20,7 @@ import win32event
 import sys
 import os
 
-print 'starting'
+print('starting')
 
 
 def makepath(*paths):
@@ -110,14 +112,14 @@ class PasteWinService(win32serviceutil.ServiceFramework):
         app_dir = os.path.dirname(sys.executable)
         cfg_file = os.path.join(app_dir, 'production.ini')
 
-        print app_dir
+        print(app_dir)
 
         os.chdir(app_dir)
         paths = [app_dir]
         addsitedir(os.path.join(app_dir, 'site-packages'))
 
         sys.path[0:0] = paths
-        print sys.path
+        print(sys.path)
 
         from paste.script.serve import ServeCommand as Server
         s = Server(None)

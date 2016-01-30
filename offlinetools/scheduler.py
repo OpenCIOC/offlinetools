@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib
 import gc
 import json
@@ -5,10 +6,12 @@ import logging
 import posixpath
 import tempfile
 import zipfile
+from base64 import standard_b64decode
+from io import TextIOWrapper
 
 from collections import defaultdict
 from datetime import datetime, timedelta
-from itertools import groupby, imap, islice
+from itertools import groupby, islice
 from operator import itemgetter
 from xml.etree import cElementTree as ET
 
@@ -23,6 +26,10 @@ from sqlalchemy.sql.expression import bindparam, select, delete, update
 # this app
 from offlinetools import models, const, certstore
 from offlinetools.keymgmt import get_signature
+from six.moves import map
+import six
+from six.moves import range
+from six.moves import zip
 
 log = logging.getLogger('offlinetools.scheduler')
 
@@ -63,7 +70,7 @@ class PullObject(object):
         self.dbsession = models.DBSession()
         try:
             self._run()
-        except Exception, e:
+        except Exception as e:
             log.exception('Caught Failure in pull:')
             self.completion_code = 'Unknown failure: %s' % e
 
@@ -135,18 +142,18 @@ class PullObject(object):
 
         try:
             r.raise_for_status()
-        except Exception, e:
+        except Exception as e:
             self.completion_code = 'Request failed: %s' % e
             return
 
-        auth = json.loads(r.content)
+        auth = r.json()
         if auth['fail']:
             # Log error
             self.completion_code = 'Request failed: ' + auth['reason']
             return
 
-        tosign = ''.join([
-            auth['challenge'].decode('base64'),
+        tosign = b''.join([
+            standard_b64decode(auth['challenge']),
             cfg.machine_name.encode('utf-8')])
         signature = get_signature(cfg.private_key, tosign)
 
@@ -156,7 +163,7 @@ class PullObject(object):
         r = requests.post(posixpath.join(url_base, 'pull'), auth_data, headers=const.DEFAULT_HEADERS, verify=certstore.certfile.name)
         try:
             r.raise_for_status()
-        except Exception, e:
+        except Exception as e:
             self.completion_code = 'Request failed: %s' % e
             return
 
@@ -170,7 +177,7 @@ class PullObject(object):
             with zipfile.ZipFile(fd, 'r') as zip:
 
                 log.debug('Full Size: %d', zip.getinfo('export.json').file_size)
-                with zip.open('export.json') as zfd:
+                with TextIOWrapper(zip.open('export.json'), 'utf-8') as zfd:
                     data = json.load(zfd)
 
                 if data['fail']:
@@ -195,12 +202,12 @@ class PullObject(object):
             except KeyError:
                 pass
 
-            auth_data['NewFields'] = list(sorted(set(unicode(x['FieldID']) for x in self._new_fields)))
+            auth_data['NewFields'] = list(sorted(set(six.text_type(x['FieldID']) for x in self._new_fields)))
             auth_data['NewRecords'] = list(sorted(set(x[0] for x in self._new_records)))
             r = requests.post(posixpath.join(url_base, 'pull2'), auth_data, headers=const.DEFAULT_HEADERS, verify=certstore.certfile.name)
             try:
                 r.raise_for_status()
-            except Exception, e:
+            except Exception as e:
                 self.completion_code = '*************************************** Request failed: %s' % e
                 return
 
@@ -214,7 +221,7 @@ class PullObject(object):
                 with zipfile.ZipFile(fd, 'r') as zip:
 
                     log.debug('Full Size: %d', zip.getinfo('export.json').file_size)
-                    with zip.open('export.json') as zfd:
+                    with TextIOWrapper(zip.open('export.json')) as zfd:
                         data = json.load(zfd)
 
                     if data['fail']:
@@ -405,20 +412,20 @@ class PullObject(object):
 
     def _insert_multi_relation(self, data, cols, item_model):
         fn = itemgetter(*cols)
-        source = set(imap(fn, data))
+        source = set(map(fn, data))
 
         session = self.dbsession
         session.flush()
 
         existing = set(map(tuple, session.execute(select([getattr(item_model.c, x) for x in cols]))))
 
-        to_add = [dict(zip(cols, x)) for x in source - existing]
+        to_add = [dict(list(zip(cols, x))) for x in source - existing]
         session.execute(item_model.insert(), to_add)
 
         return existing - source
 
     def _delete_multi_relation(self, cols, item_model, to_delete):
-        to_delete = [dict(zip(cols, x)) for x in to_delete]
+        to_delete = [dict(list(zip(cols, x))) for x in to_delete]
 
         session = self.dbsession
         d = delete(item_model).where(and_(*[getattr(item_model.c, x) == bindparam(x) for x in cols]))
@@ -475,7 +482,7 @@ class PullObject(object):
 
         sql = ''' INSERT INTO Record_updates (NUM, LangID) VALUES (?,?) '''
         cols = ['NUM', 'LangID']
-        conn.execute(sql, map(itemgetter(*cols), data['records_views']))
+        conn.execute(sql, list(map(itemgetter(*cols), data['records_views'])))
 
         if self._expect_second_update:
             self._new_records = session.execute('SELECT DISTINCT ru.NUM FROM Record_updates ru LEFT JOIN Record r ON ru.NUM=r.NUM WHERE r.NUM IS NULL').fetchall()
@@ -526,7 +533,7 @@ class PullObject(object):
 
         cols = ['LangID', 'Value']
         if vals:
-            session.execute(models.KeywordCache.__table__.insert(), [dict(zip(cols, x)) for x in vals if x[-1]])
+            session.execute(models.KeywordCache.__table__.insert(), [dict(list(zip(cols, x))) for x in vals if x[-1]])
 
         field_names = ['LOCATED_IN_CM'] + ['ORG_LEVEL_%d' % i for i in range(1, 6)]
         fields = dict(session.query(models.Field.FieldName, models.Field.FieldID).filter(models.Field.FieldName.in_(field_names)).all())
@@ -583,7 +590,7 @@ class PullObject(object):
             context = ET.iterparse(fd, events=('start',))
             context = iter(context)
 
-            event, root = context.next()
+            event, root = next(context)
             while True:
                 rows = list(fn(defaultdict(default_fn, x.attrib)) for event, x in islice(context, 5000) if x.tag == 'row')
                 if not rows:
@@ -697,7 +704,7 @@ class PullObject(object):
             cols = [primary_key] + primary_updates
             keyfn = itemgetter(*cols)
             cols = ['pk'] + primary_updates
-            session.execute(u, [dict(zip(cols, keyfn(x))) for x in upd])
+            session.execute(u, [dict(list(zip(cols, keyfn(x)))) for x in upd])
 
         if name_model:
             kw = {getattr(name_model, x): bindparam(x) for x in name_updates}
@@ -709,4 +716,4 @@ class PullObject(object):
             cols = [primary_key, 'LangID'] + name_updates
             keyfn = itemgetter(*cols)
             cols = ['pk', 'langid'] + name_updates
-            session.execute(u, [dict(zip(cols, keyfn(x))) for x in upd])
+            session.execute(u, [dict(list(zip(cols, keyfn(x)))) for x in upd])

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import transaction
 
 import sqlalchemy
@@ -16,6 +17,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from zope.sqlalchemy import ZopeTransactionExtension
 
 from offlinetools import syslanguage
+import six
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension(), expire_on_commit=False))
 
@@ -212,7 +214,7 @@ def get_config(request=None, session=None):
     except NoResultFound:
         from offlinetools import keymgmt
         priv_key, pub_key = keymgmt.generate_new_keypair()
-        cfg = ConfigData(public_key=unicode(pub_key), private_key=unicode(priv_key))
+        cfg = ConfigData(public_key=six.text_type(pub_key), private_key=six.text_type(priv_key))
 
         session.add(cfg)
         session.flush()
@@ -244,7 +246,7 @@ def on_connect_set_pragmas(dbapi_connection, connection_record):
         dbapi_connection.execute('PRAGMA cache_size=50000')
         dbapi_connection.execute('PRAGMA synchronous = OFF')
         dbapi_connection.execute('PRAGMA journal_mode = MEMORY')
-    except Exception, e:
+    except Exception as e:
         log.exception(e)
 
 

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 
 from offlinetools.views.base import ViewBase
 from offlinetools.views.validators import UnicodeString, Invalid

@@ -1,4 +1,5 @@
-﻿# =================================================================
+﻿from __future__ import absolute_import
+# =================================================================
 # Copyright (C) 2011 Community Information Online Consortium (CIOC)
 # http://www.cioc.ca
 # Developed By Katherine Lambacher / KCL Custom Software

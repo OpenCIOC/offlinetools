@@ -6,9 +6,9 @@ pyramid_tm==0.12.1
 zope.sqlalchemy
 https://github.com/formencode/formencode/archive/master.zip#egg=formencode
 paste
-pyramid_beaker==0.6.1
+pyramid_beaker==0.8
 backports.ssl_match_hostname
-PyCrypto
+PyCrypto==2.6.1
 webhelpers2
 https://github.com/Pylons/pyramid_simpleform/archive/master.zip#egg=pyramid_simpleform
 pyramid_exclog

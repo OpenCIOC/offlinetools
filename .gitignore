@@ -4,3 +4,4 @@ Output
 build
 dist
 *.egg-info/
+*.bak

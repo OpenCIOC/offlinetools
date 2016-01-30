@@ -1,4 +1,5 @@
-﻿import httplib
+﻿from __future__ import absolute_import
+import six.moves.http_client
 import socket
 import ssl
 from backports.ssl_match_hostname import match_hostname
@@ -17,4 +18,4 @@ def install_validating_https(cert_file):
 
 
 
-    httplib.HTTPSConnection.connect = validating_connect
+    six.moves.http_client.HTTPSConnection.connect = validating_connect

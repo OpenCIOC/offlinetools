@@ -1,4 +1,5 @@
-import urlparse
+from __future__ import absolute_import
+from six.moves.urllib import parse as urlparse
 import json
 
 from formencode import Schema
@@ -12,6 +13,7 @@ from offlinetools.views.base import ViewBase
 from offlinetools.views import validators
 
 import logging
+import six
 log = logging.getLogger('offlinetools.views.register')
 
 
@@ -47,7 +49,7 @@ def translate_login_site_to_secure_url(request, login_url):
         r = requests.get(mapping_url, headers=headers, verify=certstore.certfile.name)
         try:
             r.raise_for_status()
-        except Exception, e:
+        except Exception as e:
             log.error('unable to contact %s: %s, %s', mapping_url, r.headers['status'], e)
             raise UrlTranslationError(_('Unable to connect to CIOC servers: %s') % e)
 
@@ -57,7 +59,7 @@ def translate_login_site_to_secure_url(request, login_url):
 
         try:
             data = json.loads(r.content.decode('utf-8'))
-        except ValueError, e:
+        except ValueError as e:
             log.error('JSON parse error for %s: %s', mapping_url, e)
             log.debug(u'r.content: %s', r.content.decode('utf-8'))
             raise UrlTranslationError(_('CIOC site returned unexpected value'))
@@ -67,7 +69,7 @@ def translate_login_site_to_secure_url(request, login_url):
         parsedurl = urlparse.urlparse(login_url)
 
         hostname = parsedurl.hostname.lower()
-        for sec_host, all_hosts in data.iteritems():
+        for sec_host, all_hosts in six.iteritems(data):
             if hostname == sec_host or hostname in all_hosts:
                 break
         else:
@@ -100,7 +102,7 @@ class Register(ViewBase):
 
         try:
             sec_host = translate_login_site_to_secure_url(request, model_state.value('CiocSite'))
-        except UrlTranslationError, e:
+        except UrlTranslationError as e:
             model_state.add_error_for('*', e.message)
             return {}
 
@@ -113,7 +115,7 @@ class Register(ViewBase):
 
         try:
             r.raise_for_status()
-        except Exception, e:
+        except Exception as e:
             log.error('unable to contact %s: %s, %s', url, r.headers['status'], e)
             model_state.add_error_for('*', _('Unable to connect to Source CIOC site: %s') % e)
             return {}
@@ -126,7 +128,7 @@ class Register(ViewBase):
 
         try:
             data = json.loads(r.content)
-        except ValueError, e:
+        except ValueError as e:
             log.error('JSON parse error for %s: %s', url, e)
             model_state.add_error_for('*', _('CIOC site returned unexpected value'))
             return {}
@@ -172,7 +174,7 @@ class UpdateUrl(ViewBase):
 
         try:
             sec_host = translate_login_site_to_secure_url(request, model_state.value('CiocSite'))
-        except UrlTranslationError, e:
+        except UrlTranslationError as e:
             model_state.add_error_for('*', e.message)
             return {}
 

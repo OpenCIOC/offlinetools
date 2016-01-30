@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 
 from pyramid.config import Configurator
@@ -59,7 +60,7 @@ def main(global_config, **settings):
     app_data_dir = os.path.join(common_appdata_path, 'CIOC', 'OfflineTools')
     try:
         os.makedirs(app_data_dir)
-    except os.error, e:
+    except os.error as e:
         log.debug('os.error: %s', e)
 
     engine = create_engine('sqlite:///%s\\OfflineTools.db' % app_data_dir, isolation_level='READ UNCOMMITTED')
@@ -74,7 +75,7 @@ def main(global_config, **settings):
     session_lock_dir = os.path.join(app_data_dir, 'session')
     try:
         os.makedirs(session_lock_dir)
-    except os.error, e:
+    except os.error as e:
         pass
 
     settings['beaker.session.lock_dir'] = session_lock_dir

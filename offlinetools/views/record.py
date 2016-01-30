@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from itertools import groupby
 from operator import itemgetter
 
@@ -11,6 +12,7 @@ from offlinetools import models
 from offlinetools.views.base import ViewBase
 
 import logging
+from six.moves import range
 log = logging.getLogger('offlinetools.views.record')
 
 class RecordRootFactory(object):

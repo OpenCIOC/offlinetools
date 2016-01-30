@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import os
 import sys
 import fnmatch
 from collections import defaultdict
 from setuptools import setup, find_packages
+import six
 
 version = "1.1.3"
 
@@ -56,7 +58,7 @@ def find_data_files(source, target, patterns=None):
         files you want to copy.
     """
 
-    if isinstance(patterns, basestring):
+    if isinstance(patterns, six.string_types):
         patterns = [patterns]
     ret = defaultdict(list)
     for root, dir, filenames in os.walk(source):
@@ -66,7 +68,7 @@ def find_data_files(source, target, patterns=None):
 
         ret[newroot].extend(sorted(os.path.join(root, x) for x in filenames))
 
-    ret = ret.items()
+    ret = list(ret.items())
     ret.sort()
     return ret
 
@@ -107,7 +109,7 @@ requires = [
     'requests',
     'backports.ssl_match_hostname',
     'PyCrypto',
-    'webhelpers',
+    'webhelpers2',
     'pyramid_simpleform',
     'pyramid_exclog',
     'Babel',

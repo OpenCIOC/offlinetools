@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from collections import defaultdict
 from datetime import date, datetime, time
 
@@ -185,7 +186,7 @@ def passvars_pregen(request, elements, kw):
             query = []
 
         elif isinstance(query, dict):
-            query = query.items()
+            query = list(query.items())
 
         else:
             query = list(query)

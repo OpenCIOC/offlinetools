@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from datetime import time
 import re
 
@@ -12,6 +13,8 @@ from offlinetools.scheduler import key_to_schedule
 
 
 import logging
+from six.moves import map
+from six.moves import range
 log = logging.getLogger('offlinetools.views.search')
 
 
@@ -137,4 +140,4 @@ class Search(ViewBase):
         schedule = _(' @ ').join([_(schedule['day_of_week']),
                                   request.format_time(time(*[schedule[x] for x in ['hour', 'minute', 'second']]))])
 
-        return {'quicklist': map(tuple, publications), 'config': cfg, 'schedule': schedule}
+        return {'quicklist': list(map(tuple, publications)), 'config': cfg, 'schedule': schedule}

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from pyramid.httpexceptions import HTTPFound
 from offlinetools import modelstate
 

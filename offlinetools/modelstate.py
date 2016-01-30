@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # =================================================================
 # Copyright (C) 2011 Community Information Online Consortium (CIOC)
 # http://www.cioc.ca
@@ -8,8 +9,8 @@
 
 import re
 from markupsafe import Markup
-from webhelpers.html import tags
-from webhelpers.html.builder import HTML, literal
+from webhelpers2.html import tags
+from webhelpers2.html.builder import HTML, literal
 
 from pyramid_simpleform import Form
 from pyramid_simpleform.renderers import FormRenderer
@@ -17,6 +18,7 @@ from pyramid_simpleform.renderers import FormRenderer
 from offlinetools import const
 
 import logging
+import six
 log = logging.getLogger('offlinetools.modelstate')
 
 class DefaultModel(object):
@@ -63,7 +65,7 @@ class CiocFormRenderer(FormRenderer):
         Outputs radio input.
         """
         try:
-            checked = unicode(traverse_object_for_value(self.form.data, name)) == unicode(value)
+            checked = six.text_type(traverse_object_for_value(self.form.data, name)) == six.text_type(value)
         except (KeyError, AttributeError):
             pass
 
@@ -77,8 +79,8 @@ class CiocFormRenderer(FormRenderer):
         """
         Outputs checkbox in radio style (i.e. multi select)
         """
-        checked = unicode(value) in self.value(name, []) or checked
-        id = id or ('_'.join((name,unicode(value))))
+        checked = six.text_type(value) in self.value(name, []) or checked
+        id = id or ('_'.join((name,six.text_type(value))))
         return tags.checkbox(name, value, checked, label, id, **attrs)
 
     def label(self, name, label=None, **attrs):
@@ -223,8 +225,7 @@ class ModelState(object):
     @schema.setter
     def schema(self, value):
         if self.form.schema:
-            raise RuntimeError, \
-                    "schema property has already been set"
+            raise RuntimeError("schema property has already been set")
         self.form.schema = value
 
     @property
@@ -234,8 +235,7 @@ class ModelState(object):
     @validators.setter
     def validators(self, value):
         if self.form.validators:
-            raise RuntimeError, \
-                    "validators property has alread been set"
+            raise RuntimeError("validators property has alread been set")
         
         self.form.validators = value
     @property
@@ -253,12 +253,10 @@ class ModelState(object):
     @defaults.setter
     def defaults(self, value):
         if self._defaults:
-            raise RuntimeError, \
-                    "defaults property has already been set"
+            raise RuntimeError("defaults property has already been set")
         
         if self.form.is_validated:
-            raise RuntimeError, \
-                    "Form has already been validated"
+            raise RuntimeError("Form has already been validated")
         self._defaults = value
         self.form.data.update(value)
         

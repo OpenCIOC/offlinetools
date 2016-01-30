@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from hashlib import pbkdf2_hmac
+from base64 import standard_b64encode
 
 from pyramid.httpexceptions import HTTPFound
 from pyramid.security import remember, forget
@@ -22,6 +24,7 @@ class LoginSchema(Schema):
     LoginPwd = validators.String(not_empty=True)
 
     came_from = validators.UnicodeString()
+
 
 class Login(ViewBase):
     def post(self):
@@ -91,4 +94,4 @@ def logout(request):
                      headers = headers)
 
 def Crypt(salt, password, repeat=DEFAULT_REPEAT):
-    return pbkdf2_hmac('sha1', password, salt, repeat, 33).encode('base64').strip()
+    return standard_b64encode(pbkdf2_hmac('sha1', password.encode('utf-8'), salt.encode('utf-8'), repeat, 33)).decode('utf-8').strip()
