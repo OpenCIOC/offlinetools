@@ -7,7 +7,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppID={{C9F0921B-72DD-4EE8-A129-282C4099FDAD}
 AppName=CIOC Offline Tools
-AppVersion=1.1.3
+AppVersion=2.0.0
 ;AppVerName=CIOC Offline Tools 1.0
 AppPublisher=Community Information Online Consortium
 AppPublisherURL=http://www.cioc.ca/
@@ -27,7 +27,6 @@ Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 [Files]
 Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace; 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-Source: dist\python27.dll; DestDir: {app}; Flags: restartreplace uninsrestartdelete; 
 Source: dist\wsgisvc.exe; DestDir: {app}; Flags: restartreplace uninsrestartdelete; 
 Source: C:\work\cioc\OfflineTools\vcredist_x86.exe; Flags: deleteafterinstall dontcopy; 
 
@@ -37,7 +36,7 @@ Name: "{group}\Outils déconnecté"; Filename: http://localhost:8765/?Ln=fr-CA; La
 
 
 [Run]
-Check: DoesNotHaveVC2008Runtime; Filename: {tmp}\vcredist_x86.exe; Parameters: /q; WorkingDir: {tmp}; BeforeInstall: ExtractVCRedist; 
+Check: DoesNotHaveVC2010Runtime; Filename: {tmp}\vcredist_x86.exe; Parameters: /q; WorkingDir: {tmp}; BeforeInstall: ExtractVCRedist; 
 Filename: {app}\wsgisvc.exe; Parameters: "--startup auto install"; WorkingDir: {app}; Flags: RunHidden; 
 Filename: {app}\wsgisvc.exe; Parameters: "--wait 10 start"; WorkingDir: {app}; Flags: RunHidden; 
 Languages: english; Filename: http://localhost:8765/register; Flags: PostInstall ShellExec; Description: {cm:CompleteInstallation}; 
@@ -668,8 +667,8 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 
 begin
   Result := '';
-  if ServiceExists('CIOCOfflineTools') then
-    SimpleStopService('CIOCOfflineTools', true, false);
+  if ServiceExists('CIOCOfflineTools2') then
+    SimpleStopService('CIOCOfflineTools2', true, false);
 end;
 
 function MsiQueryProductState(ProductCode: string): integer;
@@ -683,9 +682,9 @@ const
   INSTALLSTATE_ABSENT = 2;
   
   
-function DoesNotHaveVC2008Runtime(): Boolean;
+function DoesNotHaveVC2010Runtime(): Boolean;
 begin
-  Result := MsiQueryProductState('{FF66E9F6-83E7-3A3E-AF14-8DE9A809A6A4}') <> INSTALLSTATE_DEFAULT 
+  Result := MsiQueryProductState('{F0C3E5D1-1ADE-321E-8167-68EF0DE699A5}') <> INSTALLSTATE_DEFAULT 
 end;
   
 procedure ExtractVCRedist();
@@ -693,3 +692,91 @@ begin
   ExtractTemporaryFile('vcredist_x86.exe');
 end;
 
+function GetNumber(var temp: String): Integer;
+var
+  part: String;
+  pos1: Integer;
+begin
+  if Length(temp) = 0 then
+  begin
+    Result := -1;
+    Exit;
+  end;
+    pos1 := Pos('.', temp);
+    if (pos1 = 0) then
+    begin
+      Result := StrToInt(temp);
+    temp := '';
+    end
+    else
+    begin
+    part := Copy(temp, 1, pos1 - 1);
+      temp := Copy(temp, pos1 + 1, Length(temp));
+      Result := StrToInt(part);
+    end;
+end;
+ 
+function CompareInner(var temp1, temp2: String): Integer;
+var
+  num1, num2: Integer;
+begin
+    num1 := GetNumber(temp1);
+  num2 := GetNumber(temp2);
+  if (num1 = -1) or (num2 = -1) then
+  begin
+    Result := 0;
+    Exit;
+  end;
+      if (num1 > num2) then
+      begin
+        Result := 1;
+      end
+      else if (num1 < num2) then
+      begin
+        Result := -1;
+      end
+      else
+      begin
+        Result := CompareInner(temp1, temp2);
+      end;
+end;
+ 
+function CompareVersion(str1, str2: String): Integer;
+var
+  temp1, temp2: String;
+begin
+    temp1 := str1;
+    temp2 := str2;
+    Result := CompareInner(temp1, temp2);
+end;
+
+function InitializeSetup(): Boolean;
+var
+  oldVersion: String;
+  uninstaller: String;
+  ErrorCode: Integer;
+begin
+  Result := True;
+  if RegKeyExists(HKEY_LOCAL_MACHINE,
+    'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C9F0921B-72DD-4EE8-A129-282C4099FDAD}_is1') then
+  begin
+    RegQueryStringValue(HKEY_LOCAL_MACHINE,
+      'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C9F0921B-72DD-4EE8-A129-282C4099FDAD}_is1',
+      'DisplayVersion', oldVersion);
+    if (CompareVersion(oldVersion, '2.0.0') < 0) then
+    begin
+      if MsgBox('Version ' + oldVersion + ' of CIOC Offline Tools needs to be uninstalled before installing this version. Do you want me to do that for you?',
+        mbConfirmation, MB_YESNO) = IDNO then
+      begin
+        Result := False;
+      end
+      else
+      begin
+          RegQueryStringValue(HKEY_LOCAL_MACHINE,
+            'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C9F0921B-72DD-4EE8-A129-282C4099FDAD}_is1',
+            'UninstallString', uninstaller);
+          ShellExec('runas', uninstaller, '/SILENT', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
+      end;
+    end
+  end
+end;

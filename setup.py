@@ -6,37 +6,7 @@ from collections import defaultdict
 from setuptools import setup, find_packages
 import six
 
-version = "1.1.3"
-
-try:
-    # py2exe 0.6.4 introduced a replacement modulefinder.
-    # This means we have to add package paths there, not to the built-in
-    # one.  If this new modulefinder gets integrated into Python, then
-    # we might be able to revert this some day.
-    # if this doesn't work, try import modulefinder
-    try:
-        import py2exe.mf as modulefinder
-    except ImportError:
-        import modulefinder  # noqa
-    import win32com
-    for p in win32com.__path__[1:]:
-        modulefinder.AddPackagePath("win32com", p)
-    for extra in ["win32com.shell"]:  # ,"win32com.mapi"
-        __import__(extra)
-        m = sys.modules[extra]
-        for p in m.__path__[1:]:
-            modulefinder.AddPackagePath(extra, p)
-    import pkg_resources
-    for p in pkg_resources.__path__[1:]:
-        modulefinder.AddPackagePath("pkg_resources", p)
-    for extra in ["pkg_resources.extern.packaging", 'pkg_resources.extern.six', 'pkg_resources.extern.six.moves']:
-        __import__(extra)
-        m = sys.modules[extra]
-        for p in m.__path__[1:]:
-            modulefinder.AddPackagePath(extra, p)
-except ImportError:
-    # no build path setup, no worries.
-    pass
+version = "2.0.0"
 
 if 'py2exe' in sys.argv:
     import py2exe  # noqa
@@ -45,6 +15,7 @@ if 'py2exe' in sys.argv:
     compileall.compile_dir("offlinetools", force=1)
 
 from distutils.sysconfig import get_python_lib
+
 
 def find_data_files(source, target, patterns=None):
     """Locates the specified data-files and returns the matches
@@ -117,8 +88,8 @@ requires = [
 
     ]
 
-if sys.version_info[:3] < (2, 5, 0):
-    requires.append('pysqlite')
+data_files = (
+)
 
 setup(
     name='OfflineTools',
@@ -147,14 +118,12 @@ setup(
     paster_plugins=['pyramid'],
     options={
         'py2exe': {
-            'compressed': 1,
-            'bundle_files': 2,
+            'skip_archive': True,
             'includes': [
-                'dumbdbm', 'anydbm', 'sqlite3', 'new', 'HTMLParser', 'Queue',
-                'BaseHTTPServer', 'urllib2', 'cgi', 'io', 'shutil', 'decimal',
-                'Cookie', 'win32com.shell.shell', 'win32com.shell.shellcon',
+                'sqlite3', 'win32com.shell.shell', 'win32com.shell.shellcon',
                 'xml.etree.cElementTree', 'xml.etree.ElementTree',
-                'collections', 'pkgutil', 'symbol', 'distutils'
+                'symbol', 'distutils', 'logging.config', 'urllib.request', 'http.cookies',
+                'html.parser'
             ],
             'excludes': [
                 "pywin", "pywin.debugger", "pywin.debugger.dbgcon",
@@ -162,18 +131,17 @@ setup(
                 "Tkconstants", "Tkinter", "tcl", 'pkg_resources',
             ],
             'dll_excludes': [
-                'POWRPROF.dll', 'API-MS-Win-Core-LocalRegistry-L1-1-0.dll',
-                'API-MS-Win-Core-ProcessThreads-L1-1-0.dll',
-                'API-MS-Win-Security-Base-L1-1-0.dll'
             ]
         }
     },
     service=[service_definition],
     data_files=(
-        find_data_files('offlinetools', 'offlinetools', ['*.pyc', '*.mak']) +
-        find_data_files(r'offlinetools\locale', 'offlinetools\locale', '*.mo') +
+        find_data_files('offlinetools', 'offlinetools', ['*.py', '*.pyc', '*.mak']) +
+        find_data_files(r'offlinetools\locale', 'offlinetools\locale', ['*.mo']) +
         find_data_files(r'offlinetools\static', 'offlinetools\static') +
         find_data_files('OfflineTools.egg-info', 'OfflineTools.egg-info') +
-        find_data_files(get_python_lib(), 'site-packages')
+        find_data_files(get_python_lib(), 'site-packages') +
+        [('site-packages', [get_python_lib() + '/../site.py', get_python_lib() + '/../orig-prefix.txt'])] +
+        [('', ['production.ini'])]
     )
 )

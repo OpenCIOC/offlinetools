@@ -13,7 +13,7 @@ from __future__ import print_function
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import win32traceutil
+# import win32traceutil
 import win32serviceutil
 import win32service
 import win32event
@@ -99,9 +99,9 @@ def addsitedir(sitedir, known_paths=None):
 
 
 class PasteWinService(win32serviceutil.ServiceFramework):
-    _svc_name_ = "CIOCOfflineTools"
-    _svc_display_name_ = "CIOC Offline Tools"
-    _svc_description_ = "CIOC Offline Tools"
+    _svc_name_ = "CIOCOfflineTools2"
+    _svc_display_name_ = "CIOC Offline Tools 2.0"
+    _svc_description_ = "CIOC Offline Tools 2.0"
 
     def __init__(self, args):
         win32serviceutil.ServiceFramework.__init__(self, args)
@@ -121,21 +121,21 @@ class PasteWinService(win32serviceutil.ServiceFramework):
         sys.path[0:0] = paths
         print(sys.path)
 
-        from paste.script.serve import ServeCommand as Server
-        s = Server(None)
-        args = [cfg_file]
+        from paste.deploy import loadapp
+        from paste.httpserver import serve
 
-        s.run(args)
-        win32event.WaitForSingleObject(self.stop_event, win32event.INFINITE)
+        app = loadapp('config:' + cfg_file, 'main', relative_to=os.getcwd(), global_conf={})
+        self.server = serve(app, port=8765, start_loop=False)
+        self.server.serve_forever()
+
+        win32event.SetEvent(self.stop_event)
 
     def SvcStop(self):
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
         "send stop event"
-        win32event.SetEvent(self.stop_event)
+        self.server.server_close()
+        win32event.WaitForSingleObject(self.stop_event, win32event.INFINITE)
         "stop event sent"
-        self.ReportServiceStatus(win32service.SERVICE_STOPPED)
-        "Exit"
-        sys.exit()
 
 if __name__ == '__main__':
     # Note that this code will not be run in the 'frozen' exe-file!!!
