@@ -1,3 +1,19 @@
+# =========================================================================================
+#  Copyright 2016 Community Information Online Consortium (CIOC) and KCL Software Solutions
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# =========================================================================================
+
 from __future__ import absolute_import
 from datetime import time
 
@@ -34,19 +50,6 @@ class Status(ViewBase):
         request = self.request
         cfg = request.config
 
-        #session = request.dbsession
-        #LangID = request.language.LangID
-
-        #sql = '''
-        #SELECT vwn.Name
-        #    FROM View AS vw
-        #    INNER JOIN View_Name AS vwn
-        #        ON vw.ViewType=vwn.ViewType AND vwn.LangID=(SELECT LangID FROM View_Name WHERE ViewType=vwn.ViewType ORDER BY CASE WHEN LangID=? THEN 0 ELSE 1 END, LangID LIMIT 1)
-        #ORDER BY vwn.Name
-        #    '''
-
-        #connection = session.connection()
-        #views = connection.execute(sql, LangID).fetchall()
         schedule = key_to_schedule(cfg.public_key)
 
         _ = request.translate

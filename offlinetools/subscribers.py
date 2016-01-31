@@ -1,13 +1,23 @@
-﻿from __future__ import absolute_import
-# =================================================================
-# Copyright (C) 2011 Community Information Online Consortium (CIOC)
-# http://www.cioc.ca
-# Developed By Katherine Lambacher / KCL Custom Software
-# If you did not receive a copy of the license agreement with this
-# software, please contact CIOC via their website above.
-#==================================================================
+# ======================================================================================
+#  Copyright 2016 Community Information Online Consortium (CIOC) and KCL Software Solutions
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# =========================================================================================
 
-import re, logging
+from __future__ import absolute_import
+
+import re
+import logging
 log = logging.getLogger('offlinetools.subscribers')
 
 from markupsafe import Markup, escape
@@ -43,7 +53,7 @@ def add_renderer_globals(event):
 
     _ = event['_'] = request.translate
     event['localizer'] = request.localizer
-    event['renderer'] = getattr(getattr(request,'model_state',None),'renderer', None)
+    event['renderer'] = getattr(getattr(request, 'model_state', None), 'renderer', None)
     event['textToHTML'] = textToHTML
 
     site_title = request.config.site_title
@@ -53,4 +63,3 @@ def add_renderer_globals(event):
 
     else:
         event['site_title'] = ''
-

@@ -1,11 +1,20 @@
+# =========================================================================================
+#  Copyright 2016 Community Information Online Consortium (CIOC) and KCL Software Solutions
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# =========================================================================================
+
 from __future__ import absolute_import
-# =================================================================
-# Copyright (C) 2011 Community Information Online Consortium (CIOC)
-# http://www.cioc.ca
-# Developed By Katherine Lambacher / KCL Custom Software
-# If you did not receive a copy of the license agreement with this
-# software, please contact CIOC via their website above.
-#==================================================================
 
 import re
 from markupsafe import Markup
@@ -21,14 +30,18 @@ import logging
 import six
 log = logging.getLogger('offlinetools.modelstate')
 
+
 class DefaultModel(object):
     pass
 
 _split_re = re.compile(r'((?:-\d+)?\.)')
+
+
 def split(value):
-    retval = _split_re.split(value,1)
-    
-    return retval + ([''] * (3-len(retval)))
+    retval = _split_re.split(value, 1)
+
+    return retval + ([''] * (3 - len(retval)))
+
 
 def traverse_object_for_value(obj, name, is_array=False):
     try:
@@ -37,13 +50,12 @@ def traverse_object_for_value(obj, name, is_array=False):
         if is_array:
             raise
 
-        try: 
+        try:
             return getattr(obj, name)
         except (AttributeError, TypeError):
             head, sep, tail = split(name)
             if head == name:
                 raise KeyError
-
 
             newobj = traverse_object_for_value(obj, head)
 
@@ -53,11 +65,12 @@ def traverse_object_for_value(obj, name, is_array=False):
 
             return traverse_object_for_value(newobj, tail)
 
+
 class CiocFormRenderer(FormRenderer):
     def value(self, name, default=None):
         try:
             return traverse_object_for_value(self.form.data, name)
-        except (KeyError,AttributeError, IndexError):
+        except (KeyError, AttributeError, IndexError):
             return default
 
     def radio(self, name, value=None, checked=False, label=None, **attrs):
@@ -72,20 +85,20 @@ class CiocFormRenderer(FormRenderer):
         return tags.radio(name, value, checked, label, **attrs)
 
     def checkbox(self, name, value='1', checked=False, label=None, id=None, **attrs):
-        return tags.checkbox(name, value, self.value(name) or checked, 
+        return tags.checkbox(name, value, self.value(name) or checked,
             label, id or name, **attrs)
-        
+
     def ms_checkbox(self, name, value=None, checked=False, label=None, id=None, **attrs):
         """
         Outputs checkbox in radio style (i.e. multi select)
         """
         checked = six.text_type(value) in self.value(name, []) or checked
-        id = id or ('_'.join((name,six.text_type(value))))
+        id = id or ('_'.join((name, six.text_type(value))))
         return tags.checkbox(name, value, checked, label, id, **attrs)
 
     def label(self, name, label=None, **attrs):
         """
-        Outputs a <label> element. 
+        Outputs a <label> element.
 
         `name`  : field name. Automatically added to "for" attribute.
 
@@ -94,7 +107,7 @@ class CiocFormRenderer(FormRenderer):
         if 'for_' not in attrs:
             attrs['for_'] = name
 
-        #attrs['for_'] = tags._make_safe_id_component(attrs['for_'])
+        # attrs['for_'] = tags._make_safe_id_component(attrs['for_'])
         label = label or name.capitalize()
         return HTML.tag("label", label, **attrs)
 
@@ -105,11 +118,11 @@ class CiocFormRenderer(FormRenderer):
 
     def url(self, name, value=None, id=None, **attrs):
         kw = {'type': 'text', 'maxlength': 150, 'class_': 'url'}
-        kw.update(attrs) 
+        kw.update(attrs)
         value = self.value(name, value)
         if value and value.startswith('http://'):
             value = value[len('http://'):]
-        return literal(u'http://')+tags.text(name, value, id, **kw)
+        return literal(u'http://') + tags.text(name, value, id, **kw)
 
     def email(self, name, value=None, id=None, **attrs):
         kw = {'type': 'email', 'maxlength': 60, 'class_': 'email'}
@@ -170,10 +183,9 @@ class CiocFormRenderer(FormRenderer):
 
             return HTML.tag("ul", tags.literal(content), **attrs)
 
-        
         return Markup('''
             <div class="ui-widget clearfix" style="margin: 0.25em;">
-                <div class="ui-state-error error-field-wrapper"> 
+                <div class="ui-state-error error-field-wrapper">
                 <span class="ui-icon ui-icon-alert error-notice-icon"></span>%s
                 </div>
             </div>
@@ -186,13 +198,13 @@ class CiocFormRenderer(FormRenderer):
         star_err = self.errors_for('*')
         if star_err:
             star_err = star_err[0]
-        msg =  msg or star_err or 'There were validation errors'
+        msg = msg or star_err or 'There were validation errors'
         return self.error_msg(msg)
 
     def error_msg(self, msg):
         return Markup('''
             <div class="ui-widget error-notice clearfix">
-                <div class="ui-state-error ui-corner-all error-notice-wrapper"> 
+                <div class="ui-state-error ui-corner-all error-notice-wrapper">
                     <p><span class="ui-icon ui-icon-alert error-notice-icon"></span>
                     %s</p>
                 </div>
@@ -236,8 +248,9 @@ class ModelState(object):
     def validators(self, value):
         if self.form.validators:
             raise RuntimeError("validators property has alread been set")
-        
+
         self.form.validators = value
+
     @property
     def method(self):
         return self.form.method
@@ -254,13 +267,11 @@ class ModelState(object):
     def defaults(self, value):
         if self._defaults:
             raise RuntimeError("defaults property has already been set")
-        
+
         if self.form.is_validated:
             raise RuntimeError("Form has already been validated")
         self._defaults = value
         self.form.data.update(value)
-        
-
 
     @property
     def data(self):
@@ -269,7 +280,6 @@ class ModelState(object):
     def validate(self, *args, **kw):
         return self.form.validate(*args, **kw)
 
-    
     def bind(self, obj=None, include=None, exclude=None):
         if obj is None:
             obj = DefaultModel()
@@ -293,5 +303,3 @@ class ModelState(object):
         errlist.append(msg)
 
         self.form.errors[name] = errlist
-
-
