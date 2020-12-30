@@ -1,76 +1,8 @@
-# =========================================================================================
-#  Copyright 2016 Community Information Online Consortium (CIOC) and KCL Software Solutions
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-# =========================================================================================
-
-# This file contains some sourc code from site.py from the Python source which
-# bootstraps the site-packages directory. It is marked by begin and end comments
-
 from __future__ import absolute_import
-from __future__ import print_function
-
 import sys
-
-# import win32traceutil
-import win32serviceutil
-import win32service
-import win32event
 import os
 import io
-
-
-class PasteWinService(win32serviceutil.ServiceFramework):
-    _svc_name_ = "CIOCOfflineTools2"
-    _svc_display_name_ = "CIOC Offline Tools 2.0"
-    _svc_description_ = "CIOC Offline Tools 2.0"
-
-    def __init__(self, args):
-        win32serviceutil.ServiceFramework.__init__(self, args)
-        self.stop_event = win32event.CreateEvent(None, 0, 0, None)
-
-    def SvcDoRun(self):
-
-        app_dir = os.path.dirname(sys.executable)
-        cfg_file = os.path.join(app_dir, 'production.ini')
-        debug = False
-        if 'debug' in sys.argv:
-            debug = True
-            cfg_file = os.path.join(app_dir, 'development.ini')
-
-        os.chdir(app_dir)
-        paths = [app_dir]
-        addsitedir(os.path.join(app_dir, 'site-packages'))
-
-        sys.path[0:0] = paths
-
-        from paste.deploy import loadapp
-        from paste.httpserver import serve
-
-
-        app = loadapp('config:' + cfg_file, 'main', relative_to=os.getcwd(), global_conf={})
-        self.server = serve(app, port=8765, start_loop=False)
-        self.server.serve_forever()
-
-        if not debug:
-            win32event.SetEvent(self.stop_event)
-
-    def SvcStop(self):
-        self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
-        "send stop event"
-        self.server.server_close()
-        win32event.WaitForSingleObject(self.stop_event, win32event.INFINITE)
-        "stop event sent"
+import logging.config
 
 # ==========================================================================
 # start of inlined methods from site.py to bootstrap site-packages directory
@@ -170,6 +102,29 @@ def addsitedir(sitedir, known_paths=None):
 # covered by PSF license from Python distribution
 # ==========================================================================
 
+
+def main():
+    print(sys.path)
+    app_dir = os.path.dirname(sys.executable)
+    print(app_dir)
+    paths = [app_dir]
+    print(paths)
+    addsitedir(os.path.join(app_dir, 'site-packages'))
+    print(sys.path)
+    sys.path[0:0] = paths
+    print(sys.path)
+
+    from paste.deploy import loadapp
+    from paste.httpserver import serve
+
+    import cryptography.hazmat.primitives.asymmetric.rsa  # noqa
+    import cryptography.hazmat.bindings.openssl.binding  # noqa
+    logging.config.fileConfig('development.ini')
+    app = loadapp('config:development.ini', 'main', relative_to=os.getcwd(), global_conf={})
+    server = serve(app, port=8765, start_loop=False)
+    print('starting server')
+    server.serve_forever()
+
+
 if __name__ == '__main__':
-    # Note that this code will not be run in the 'frozen' exe-file!!!
-    win32serviceutil.HandleCommandLine(PasteWinService)
+    main()

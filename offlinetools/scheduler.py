@@ -170,11 +170,12 @@ class PullObject(object):
             return
 
         tosign = b''.join([
-            standard_b64decode(auth['challenge']),
+            standard_b64decode(auth['challenge'].encode('ascii')),
             cfg.machine_name.encode('utf-8')])
         signature = get_signature(cfg.private_key, tosign)
 
-        auth_data['ChallengeSig'] = json.dumps(signature)
+        auth_data['AuthVersion'] = '2'
+        auth_data['ChallengeSig'] = signature
         if cfg.last_update and not self.force:
             auth_data['FromDate'] = cfg.last_update.isoformat()
         r = requests.post(posixpath.join(url_base, 'pull'), auth_data, headers=const.DEFAULT_HEADERS, verify=certstore.certfile.name)
@@ -442,6 +443,9 @@ class PullObject(object):
         return existing - source
 
     def _delete_multi_relation(self, cols, item_model, to_delete):
+        if not to_delete:
+            return
+
         to_delete = [dict(list(zip(cols, x))) for x in to_delete]
 
         session = self.dbsession
