@@ -30,12 +30,13 @@ from sqlalchemy.orm import scoped_session, sessionmaker, relationship, class_map
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
-from zope.sqlalchemy import ZopeTransactionExtension
+from zope.sqlalchemy import register
 
 from offlinetools import syslanguage
 import six
 
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension(), expire_on_commit=False))
+DBSession = scoped_session(sessionmaker(expire_on_commit=False))
+register(DBSession)
 
 import logging
 log = logging.getLogger('offlinetools.models')

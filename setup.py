@@ -22,7 +22,7 @@ from collections import defaultdict
 from setuptools import setup, find_packages
 import six
 
-version = "2.0.0"
+version = "2.0.1"
 
 if 'py2exe' in sys.argv:
     import py2exe  # noqa
@@ -84,24 +84,22 @@ README = open(os.path.join(here, 'README.md')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid==1.4.9',
+    'pyramid==1.5.8',
     'SQLAlchemy',
     'transaction',
     'pyramid_tm',
     'pyramid_debugtoolbar',
     'zope.sqlalchemy',
-    'formencode',
+    'FormEncode',
     'paste',
     'pyramid_beaker',
     'requests',
-    'backports.ssl_match_hostname',
-    'PyCrypto',
+    'cryptography',
     'webhelpers2',
     'pyramid_simpleform',
     'pyramid_exclog',
     'Babel',
     'wincertstore',
-
     ]
 
 data_files = (

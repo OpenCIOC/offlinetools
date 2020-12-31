@@ -153,6 +153,7 @@ class PullObject(object):
         self.status = 5
 
         # auth request
+        log.debug('authenticating against "%s"', url_base)
         auth_data = {'MachineName': cfg.machine_name}
         r = requests.post(posixpath.join(url_base, 'auth'), auth_data, headers=const.DEFAULT_HEADERS, verify=certstore.certfile.name)
 
@@ -678,11 +679,12 @@ class PullObject(object):
             lang = name_model.LangID
             existing = set(session.query(pk, lang).all())
             to_delete = existing - source
+            if to_delete:
 
-            d = delete(name_model.__table__).where(and_(
-                getattr(name_model, primary_key) == bindparam(primary_key),
-                name_model.LangID == bindparam('LangID')))
-            session.execute(d, [{primary_key: x[0], 'LangID': x[1]} for x in to_delete])
+                d = delete(name_model.__table__).where(and_(
+                    getattr(name_model, primary_key) == bindparam(primary_key),
+                    name_model.LangID == bindparam('LangID')))
+                session.execute(d, [{primary_key: x[0], 'LangID': x[1]} for x in to_delete])
 
         source = set([x[primary_key] for x in items])
 
@@ -691,8 +693,9 @@ class PullObject(object):
 
         to_delete = existing - source
 
-        d = delete(item_model.__table__).where(getattr(item_model, primary_key) == bindparam(primary_key))
-        session.execute(d, [{primary_key: x} for x in to_delete])
+        if to_delete:
+            d = delete(item_model.__table__).where(getattr(item_model, primary_key) == bindparam(primary_key))
+            session.execute(d, [{primary_key: x} for x in to_delete])
 
     def _update_named_records(self, items, item_model, name_model, primary_key, primary_updates, name_updates):
         session = self.dbsession
@@ -711,6 +714,8 @@ class PullObject(object):
         existing = set(x[0] for x in session.query(pk).all())
 
         to_update = existing & source
+        if not to_update:
+            return
 
         if primary_updates:
             kw = {getattr(item_model, x): bindparam(x) for x in primary_updates}
