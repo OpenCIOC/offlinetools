@@ -47,7 +47,7 @@ ${renderer.form_passvars()}
 			<td class="ui-widget-header">${renderer.label('QuickList', _('Quick List'))}</td>
 			<td class="ui-widget-content">
 				${renderer.errorlist('QuickList')}
-				${renderer.select('QuickList', options=[('','')] + map(tuple, quicklist))}
+				${renderer.select('QuickList', options=[('','')] + list(map(tuple, quicklist)))}
 				</td>
 		</tr>
         %endif

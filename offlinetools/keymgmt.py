@@ -15,28 +15,47 @@
 # =========================================================================================
 
 from __future__ import absolute_import
-from Crypto.PublicKey import RSA
-from Crypto import Random
-from Crypto.Hash import SHA256
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+import base64
 
 import logging
 log = logging.getLogger('offlinetools.keymgmt')
 
 
 def generate_new_keypair():
-    rng = Random.new().read
+    private_key = rsa.generate_private_key(
+        # public exponent should always be 65537 per documentation
+        # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa.html
+        public_exponent=65537,
+        key_size=1024
+    )
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+    public_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
 
-    key = RSA.generate(1024, rng)
-    return key.exportKey(), key.publickey().exportKey()
+    return private_pem.decode('ascii'), public_pem.decode('ascii')
 
 
 def load_key(keytext):
-    return RSA.importKey(keytext)
+    return serialization.load_pem_private_key(keytext.encode('ascii'), password=None)
 
 
 def get_signature(keytext, tosign):
-    digest = SHA256.new(tosign).digest()
-    key = load_key(keytext)
-    rng = Random.new().read
-    sig = key.sign(digest, rng)
-    return sig
+    signature = load_key(keytext).sign(
+        tosign,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    return base64.b64encode(signature).decode('ascii')

@@ -66,7 +66,7 @@ def translate_login_site_to_secure_url(request, login_url):
         try:
             r.raise_for_status()
         except Exception as e:
-            log.error('unable to contact %s: %s, %s', mapping_url, r.headers['status'], e)
+            log.error('unable to contact %s: %s %s, %s', mapping_url, r.status_code, r.reason, e)
             raise UrlTranslationError(_('Unable to connect to CIOC servers: %s') % e)
 
         if r.headers['content-type'].split(';')[0] != 'application/json':
@@ -132,7 +132,7 @@ class Register(ViewBase):
         try:
             r.raise_for_status()
         except Exception as e:
-            log.error('unable to contact %s: %s, %s', url, r.headers['status'], e)
+            log.error('unable to contact %s: %s %s, %s', url, r.status_code, r.reason, e)
             model_state.add_error_for('*', _('Unable to connect to Source CIOC site: %s') % e)
             return {}
 

@@ -1,5 +1,5 @@
 # =========================================================================================
-#  Copyright 2016 Community Information Online Consortium (CIOC) and KCL Software Solutions
+#  Copyright 2016 Community Information Online Consortium (CIOC) and KCL Software Solutions Inc.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,13 +26,12 @@ from pyramid.authentication import SessionAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.security import NO_PERMISSION_REQUIRED, Authenticated, Deny, Allow, Everyone
 
-from win32com.shell import shell, shellcon
-
-from apscheduler.scheduler import Scheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from offlinetools.models import initialize_sql, get_config
 from offlinetools.request import passvars_pregen
 from offlinetools.scheduler import scheduled_pull, key_to_schedule
+from offlinetools.logtools import _get_app_data_dir
 
 import logging
 
@@ -63,6 +62,7 @@ class RootFactory(object):
 def found_view(request):
     return request.context
 
+
 sched = None
 
 
@@ -72,26 +72,21 @@ def main(global_config, **settings):
 
     global sched
 
-    common_appdata_path = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
-    app_data_dir = os.path.join(common_appdata_path, 'CIOC', 'OfflineTools')
-    try:
-        os.makedirs(app_data_dir)
-    except os.error as e:
-        log.debug('os.error: %s', e)
+    app_data_dir = _get_app_data_dir()
 
     engine = create_engine('sqlite:///%s\\OfflineTools.db' % app_data_dir, isolation_level='READ UNCOMMITTED')
     initialize_sql(engine)
 
     cfg = get_config()
 
-    sched = Scheduler()
+    sched = BackgroundScheduler()
     sched.start()
-    sched.add_cron_job(scheduled_pull, **key_to_schedule(cfg.public_key))
+    sched.add_job(scheduled_pull, 'cron', **key_to_schedule(cfg.public_key))
 
     session_lock_dir = os.path.join(app_data_dir, 'session')
     try:
         os.makedirs(session_lock_dir)
-    except os.error as e:
+    except os.error:
         pass
 
     settings['beaker.session.lock_dir'] = session_lock_dir
@@ -104,6 +99,7 @@ def main(global_config, **settings):
                           request_factory='offlinetools.request.OfflineToolsRequest',
                          authentication_policy=authn_policy,
                          authorization_policy=authz_policy)
+    config.include('pyramid_mako')
     config.add_translation_dirs('offlinetools:locale')
     config.add_static_view('static', 'offlinetools:static', cache_max_age=3600, permission=NO_PERMISSION_REQUIRED)
 

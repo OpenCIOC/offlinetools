@@ -18,8 +18,12 @@ from __future__ import absolute_import
 import os
 import logging.handlers
 
-from win32com.shell import shell, shellcon
+import ctypes
+from ctypes import wintypes, windll, create_unicode_buffer
 
+CSIDL_COMMON_APPDATA = 35
+_SHGetFolderPath = windll.shell32.SHGetFolderPathW
+_SHGetFolderPath.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.HANDLE, wintypes.DWORD, wintypes.LPCWSTR]
 _app_data_dir = None
 
 
@@ -27,7 +31,9 @@ def _get_app_data_dir():
     global _app_data_dir
 
     if _app_data_dir is None:
-        common_appdata_path = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
+        path_buf = create_unicode_buffer(wintypes.MAX_PATH)
+        _ = _SHGetFolderPath(0, CSIDL_COMMON_APPDATA, 0, 0, path_buf)
+        common_appdata_path = path_buf.value
         _app_data_dir = os.path.join(common_appdata_path, 'CIOC', 'OfflineTools')
         try:
             os.makedirs(_app_data_dir)

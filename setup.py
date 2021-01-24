@@ -17,20 +17,39 @@
 from __future__ import absolute_import
 import os
 import sys
+import shutil
 import fnmatch
 from collections import defaultdict
 from setuptools import setup, find_packages
 import six
 
-version = "2.0.0"
+version = "2.0.1"
 
 if 'py2exe' in sys.argv:
-    import py2exe  # noqa
+    # this monkeypatches out the issue from https://github.com/py2exe/py2exe/issues/32
+    import py2exeruntimepatch  # noqa
+    #import py2exe  # noqa
     import compileall
 
     compileall.compile_dir("offlinetools", force=1)
 
 from distutils.sysconfig import get_python_lib
+
+cleaned_run = False
+
+
+def copy_and_find_data_files(source, target, patterns=None):
+    global cleaned_run
+    if not cleaned_run:
+        # clear our copied values for new run
+        cleaned_run = True
+        shutil.rmtree('build/tmp', True)
+        # ensure that target directory exists
+        os.makedirs('build/tmp', )
+
+    tmp_src = 'build/tmp/' + os.path.basename(source)
+    shutil.copytree(source, tmp_src)
+    return find_data_files(tmp_src, target, patterns)
 
 
 def find_data_files(source, target, patterns=None):
@@ -84,24 +103,22 @@ README = open(os.path.join(here, 'README.md')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid==1.4.9',
+    'pyramid==1.5.8',
     'SQLAlchemy',
     'transaction',
     'pyramid_tm',
     'pyramid_debugtoolbar',
     'zope.sqlalchemy',
-    'formencode',
+    'FormEncode',
     'paste',
     'pyramid_beaker',
     'requests',
-    'backports.ssl_match_hostname',
-    'PyCrypto',
+    'cryptography',
     'webhelpers2',
     'pyramid_simpleform',
     'pyramid_exclog',
     'Babel',
     'wincertstore',
-
     ]
 
 data_files = (
@@ -134,12 +151,14 @@ setup(
     paster_plugins=['pyramid'],
     options={
         'py2exe': {
-            'skip_archive': True,
+            # 'skip_archive': True,
+            'bundle_files': 3,
             'includes': [
-                'sqlite3', 'win32com.shell.shell', 'win32com.shell.shellcon',
+                'sqlite3',
                 'xml.etree.cElementTree', 'xml.etree.ElementTree',
                 'symbol', 'distutils', 'logging.config', 'urllib.request', 'http.cookies',
-                'html.parser'
+                'html.parser', 'uuid', 'decimal', 'six', 'cgi', 'dbm', 'timeit', 'ipaddress',
+                #'_uuid'
             ],
             'excludes': [
                 "pywin", "pywin.debugger", "pywin.debugger.dbgcon",
@@ -151,13 +170,15 @@ setup(
         }
     },
     service=[service_definition],
+    console=['devserver.py'],
     data_files=(
         find_data_files('offlinetools', 'offlinetools', ['*.py', '*.pyc', '*.mak']) +
         find_data_files(r'offlinetools\locale', 'offlinetools\locale', ['*.mo']) +
         find_data_files(r'offlinetools\static', 'offlinetools\static') +
         find_data_files('OfflineTools.egg-info', 'OfflineTools.egg-info') +
-        find_data_files(get_python_lib(), 'site-packages') +
-        [('site-packages', [get_python_lib() + '/../site.py', get_python_lib() + '/../orig-prefix.txt'])] +
-        [('', ['production.ini'])]
+        copy_and_find_data_files(get_python_lib(), 'site-packages') +
+        copy_and_find_data_files('c:/python38/Lib/site-packages/six-1.15.0.dist-info', 'site-packages/six-1.15.0.dist-info') +
+        # [('site-packages', [get_python_lib() + '/../site.py', get_python_lib() + '/../orig-prefix.txt'])] +
+        [('', ['production.ini', 'development.ini'])]
     )
 )

@@ -23,7 +23,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppID={{C9F0921B-72DD-4EE8-A129-282C4099FDAD}
 AppName=CIOC Offline Tools
-AppVersion=2.0.0
+AppVersion=2.0.1
 ;AppVerName=CIOC Offline Tools 1.0
 AppPublisher=Community Information Online Consortium
 AppPublisherURL=http://www.cioc.ca/
