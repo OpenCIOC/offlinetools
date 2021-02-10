@@ -35,4 +35,4 @@ apscheduler==3.6.3
 pefile
 py2exe==0.10.1.0
 pyramid_debugtoolbar==1.0.9
-cryptography==3.3.1
+cryptography==3.3.2
